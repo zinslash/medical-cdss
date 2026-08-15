@@ -1,4 +1,5 @@
 import uvicorn
+import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -162,7 +163,7 @@ async def analyze_scan(patient_id: str = Body(...), file: UploadFile = File(...)
     raw_upload = await file.read()
     image_bytes = BytesIO(raw_upload)
 
-    scan_type = router_ai.predict_scan_type(image_bytes)
+    scan_type = await asyncio.to_thread(router_ai.predict_scan_type, image_bytes)
 
     if scan_type == "unknown":
         return {
@@ -180,11 +181,14 @@ async def analyze_scan(patient_id: str = Body(...), file: UploadFile = File(...)
     previous_record = get_previous_scan(patient_id, scan_type)
 
     if scan_type == "brain":
-        pred_class, confidence, current_heatmap, raw_current_map = brain_ai.predict_and_explain(image_bytes)
+        pred_class, confidence, current_heatmap, raw_current_map = await asyncio.to_thread(
+            brain_ai.predict_and_explain, image_bytes)
     elif scan_type == "bone":
-        pred_class, confidence, current_heatmap, raw_current_map = bone_ai.predict_and_explain(image_bytes)
+        pred_class, confidence, current_heatmap, raw_current_map = await asyncio.to_thread(
+            bone_ai.predict_and_explain, image_bytes)
     else:
-        pred_class, confidence, current_heatmap, raw_current_map = chest_ai.predict_and_explain(image_bytes)
+        pred_class, confidence, current_heatmap, raw_current_map = await asyncio.to_thread(
+            chest_ai.predict_and_explain, image_bytes)
 
     delta_b64 = None
     if previous_record:
@@ -194,11 +198,11 @@ async def analyze_scan(patient_id: str = Body(...), file: UploadFile = File(...)
                 prev_bytes = BytesIO(pf.read())
 
             if scan_type == "brain":
-                _, _, _, raw_prev_map = brain_ai.predict_and_explain(prev_bytes)
+                _, _, _, raw_prev_map = await asyncio.to_thread(brain_ai.predict_and_explain, prev_bytes)
             elif scan_type == "bone":
-                _, _, _, raw_prev_map = bone_ai.predict_and_explain(prev_bytes)
+                _, _, _, raw_prev_map = await asyncio.to_thread(bone_ai.predict_and_explain, prev_bytes)
             else:
-                _, _, _, raw_prev_map = chest_ai.predict_and_explain(prev_bytes)
+                _, _, _, raw_prev_map = await asyncio.to_thread(chest_ai.predict_and_explain, prev_bytes)
 
             delta_map = compute_temporal_delta(raw_current_map, raw_prev_map)
             _, d_buffer = cv2.imencode('.jpg', delta_map)
@@ -300,7 +304,10 @@ async def update_patient_status(
         # weight_kg=...  <- wire up once app_patients has a weight column
     )
 
-
+    # CRITICAL: get_dynamic_clinical_advice now returns a DICT. SQLite cannot
+    # bind a dict as a parameter -- passing it straight through was raising
+    # "Error binding parameter 6: type 'dict' is not supported". Flatten it
+    # to text before storing.
     stored_summary = (
         f"[{clinical_plan.get('urgency', 'ROUTINE')}] "
         f"{clinical_plan.get('headline', 'Clinical guidance')}\n\n"
