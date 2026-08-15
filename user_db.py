@@ -1,29 +1,43 @@
+import os
 import mysql.connector
 from mysql.connector import Error
 
-# Configuration pointing to your XAMPP database named 'ai_triage_db'
+# Reads DB connection details from environment variables (set on Railway via
+# the dashboard) and falls back to your local XAMPP defaults when those
+# variables aren't set -- so this same file works unchanged locally and
+# deployed. Previously this was hardcoded to 127.0.0.1 / ai_triage_db, which
+# meant every deployed connection silently failed (get_connection() returned
+# None) even though insert_app_patient()/insert_app_doctor() swallowed that
+# and returned False without surfacing an error to the caller.
 DB_CONFIG = {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "password": "",
-    "database": "ai_triage_db",  # Your exact XAMPP database name
+    "host": os.environ.get("DB_HOST", "127.0.0.1"),
+    "port": int(os.environ.get("DB_PORT", 3306)),
+    "user": os.environ.get("DB_USER", "root"),
+    "password": os.environ.get("DB_PASSWORD", ""),
+    "database": os.environ.get("DB_NAME", "ai_triage_db"),
 }
 
+
 def get_connection():
-    """Opens a connection to the ai_user_db MySQL server."""
+    """Opens a connection to the configured MySQL server."""
     try:
         connection = mysql.connector.connect(**DB_CONFIG)
         if connection.is_connected():
             return connection
     except Error as e:
-        print(f"❌ Error connecting to ai_triage_db: {e}")
+        print(f"❌ Error connecting to {DB_CONFIG['database']}: {e}")
     return None
+
 
 def init_user_db():
     """
-    Creates the ai_triage_db database if it doesn't exist, then builds
+    Creates the configured database if it doesn't exist, then builds
     the app_patients and app_doctors tables inside it.
+
+    NOTE: on Railway, DB_NAME is set to "railway" (Railway's default MySQL
+    database name), which already exists -- so the CREATE DATABASE step
+    below is a no-op there and only matters for local XAMPP setups where
+    the database genuinely needs creating first.
     """
     try:
         temp_conn = mysql.connector.connect(
@@ -71,7 +85,7 @@ def init_user_db():
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ Database 'ai_triage_db' and user tables initialized successfully!")
+    print(f"✅ Database '{DB_CONFIG['database']}' and user tables initialized successfully!")
 
 
 def insert_app_patient(full_name, email, password, age, gender, problem):
