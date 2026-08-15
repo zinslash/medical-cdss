@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Triage — Medical Imaging</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ink:        #0F172A;
+            --ink-light:  #334155;
+            --muted:      #64748B;
+            --muted-soft: #94A3B8;
+            --paper:      #F4F7FB;
+            --card:       #FFFFFF;
+            --line:       #E2E8F0;
+            --brand:      #0284C7;
+            --brand-hover:#0369A1;
+            --brand-soft: #E0F2FE;
+            --triage-low: #10B981;
+            --triage-mid: #F59E0B;
+            --triage-high:#EF4444;
+            --radius-lg:  16px;
+            --radius-md:  10px;
+            --radius-sm:  6px;
+            --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md:  0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--ink);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            flex-direction: column;
+
+            /* BEAUTIFUL AMBIENT MESH BACKGROUND */
+            background-color: var(--paper);
+            background-image:
+                radial-gradient(at 0% 0%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(2, 132, 199, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
+            background-size: 100% 100%;
+        }
+
+        /* Subtle grid overlay for clinical/structured feel */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(2, 132, 199, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(2, 132, 199, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* ---------- container ---------- */
+        .shell {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ---------- brand bar ---------- */
+        .brandbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        .wordmark {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mark {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--brand);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(2, 132, 199, 0.3);
+        }
+
+        .mark svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .name {
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+        }
+
+        .locale {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        /* ---------- hero ---------- */
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 52%) minmax(0, 48%);
+            align-items: center;
+            gap: 56px;
+            margin-bottom: 40px;
+        }
+
+        .eyebrow {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--brand);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: var(--brand-soft);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #BAE6FD;
+        }
+
+        .eyebrow .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--triage-low);
+        }
+
+        h1 {
+            font-size: clamp(32px, 4vw, 48px);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--ink);
+        }
+
+        h1 span {
+            color: var(--brand);
+        }
+
+        .lede {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--muted);
+            margin-bottom: 32px;
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 36px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary {
+            background-color: var(--brand);
+            color: #FFFFFF;
+            border-color: var(--brand);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--brand-hover);
+        }
+
+        .btn-ghost {
+            background-color: var(--card);
+            color: var(--ink);
+            border-color: var(--line);
+        }
+
+        .btn-ghost:hover {
+            background-color: var(--paper);
+            border-color: var(--muted-soft);
+        }
+
+        /* Capability strip */
+        .capabilities {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            border-top: 1px solid var(--line);
+            padding-top: 24px;
+        }
+
+        .cap {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .cap b {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .cap span {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* ---------- card showcase panel ---------- */
+        .preview-panel {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 32px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .preview-badge {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--triage-low);
+            background: #ECFDF5;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid #A7F3D0;
+        }
+
+        .preview-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .preview-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--paper);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--line);
+        }
+
+        .preview-label {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .preview-val {
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        /* ---------- footer ---------- */
+        .foot {
+            border-top: 1px solid var(--line);
+            padding-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .foot a {
+            color: var(--brand);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .foot a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 36px;
+            }
+            .shell {
+                padding: 24px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="shell">
+
+    <header class="brandbar">
+        <div class="wordmark">
+            <div class="mark">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 12H7L9.5 5L14.5 19L17 12H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span class="name">AI Triage</span>
+        </div>
+        <span class="locale">Dhaka, Bangladesh</span>
+    </header>
+
+    <main class="hero">
+        <div>
+            <div class="eyebrow"><span class="dot"></span>System Active</div>
+            <h1>Upload your scan.<br><span>Get instant clinical triage.</span></h1>
+            <p class="lede">
+                Our system instantly classifies medical scans, routes cases to the right specialists, and assists clinical review teams with prioritized patient intake.
+            </p>
+
+            <div class="cta-row">
+                <a href="/login" class="btn btn-primary">Sign in</a>
+                <a href="/signup" class="btn btn-ghost">Create account</a>
+            </div>
+
+            <div class="capabilities">
+                <div class="cap"><b>Chest X-ray</b><span>Pneumonia Screening</span></div>
+                <div class="cap"><b>Brain MRI</b><span>Abnormality Review</span></div>
+                <div class="cap"><b>Bone X-ray</b><span>Fracture Detection</span></div>
+            </div>
+        </div>
+
+        <div class="preview-panel">
+            <div class="preview-header">
+                <span class="preview-title">Pipeline Status</span>
+                <span class="preview-badge">Operational</span>
+            </div>
+            <div class="preview-content">
+                <div class="preview-row">
+                    <span class="preview-label">Router Engine</span>
+                    <span class="preview-val">Active (Multi-Modal)</span>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Average Processing</span>
+                    <span class="preview-val">&lt; 1.4 seconds</span>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Integration Standard</span>
+                    <span class="preview-val">DICOM Compliant</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="foot">
+        <span>Results support clinical pre-screening and do not replace professional medical diagnosis.</span>
+        <span>Already have an account? <a href="/login">Sign in</a></span>
+    </footer>
+
+</div>
+
+<!-- The auto-redirect script has been successfully removed from here -->
+
+</body>
+</html>

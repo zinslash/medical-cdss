@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+data/
+medical_pipeline.db
+demo_images/
+requirments.zip
+best_chest_model_PEDIATRIC.pth
+best_chest_model_RSNA.pth
+best_fracture_model_OLD.pth

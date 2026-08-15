@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Summary - AI Triage</title>
+
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           GLOBAL VARIABLES & PALETTE
+           ========================================= */
+        :root {
+            --bg-color: #F4F7FB;
+            --app-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+
+            --primary: #0284C7;
+            --primary-hover: #0369A1;
+            --primary-light: #E0F2FE;
+            --primary-soft: #F0F9FF;
+
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --field-bg: #F8FAFC;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.04), 0 4px 8px -4px rgb(0 0 0 / 0.03);
+
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+        }
+
+        /* =========================================
+           GLOBAL STYLES (FULL PAGE NATURAL FLOW)
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+
+            /* AMBIENT MESH BACKGROUND */
+            background-image:
+                radial-gradient(at 0% 0%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(2, 132, 199, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
+            background-size: 100% 100%;
+        }
+
+        /* Subtle grid overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(2, 132, 199, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(2, 132, 199, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Central web layout wrapper */
+        .page-wrapper {
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* =========================================
+           HEADER
+           ========================================= */
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .back-button {
+            background: var(--app-bg);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 10px 20px;
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+            position: absolute;
+            left: 0;
+        }
+
+        .back-button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .back-button svg { width: 18px; height: 18px; }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-align: center;
+            width: 100%;
+            letter-spacing: -0.01em;
+        }
+
+        /* =========================================
+           DASHBOARD PANEL & HERO AMOUNT SECTION
+           ========================================= */
+        .dashboard-panel {
+            background-color: var(--app-bg);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .header-bg {
+            background: linear-gradient(135deg, var(--primary) 0%, #02689c 100%);
+            padding: 36px 32px;
+            color: #FFF;
+            text-align: center;
+        }
+
+        .amount-display {
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-top: 8px;
+        }
+
+        .amount-subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .content-body {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* =========================================
+           CARDS & SUMMARY SECTIONS
+           ========================================= */
+        .doctor-card {
+            background-color: var(--field-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .doctor-avatar {
+            width: 54px;
+            height: 54px;
+            background: linear-gradient(135deg, var(--primary) 0%, #0ea5e9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+        }
+
+        .doctor-info h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        .doctor-info p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .summary-section {
+            background-color: var(--field-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14.5px;
+        }
+
+        .summary-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .summary-value {
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border);
+            margin: 4px 0;
+        }
+
+        .total-row {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .verified {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* =========================================
+           BUTTON & STATES
+           ========================================= */
+        .pay-btn {
+            width: 100%;
+            height: 60px;
+            background-color: var(--primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0px 8px 16px rgba(2, 132, 199, 0.25);
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .pay-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0px 12px 24px rgba(2, 132, 199, 0.3);
+        }
+
+        .pay-btn:disabled {
+            background-color: var(--text-light);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 15px;
+            padding: 40px 20px;
+            font-weight: 500;
+        }
+
+        .empty-state a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .empty-state a:hover {
+            text-decoration: underline;
+        }
+
+        /* =========================================
+           RESPONSIVE DESIGN
+           ========================================= */
+        @media (max-width: 600px) {
+            .page-wrapper { padding: 30px 16px; }
+            .dashboard-panel { border-radius: var(--radius-md); }
+            .content-body { padding: 20px; }
+            .header-title { font-size: 20px; }
+            .back-button span { display: none; }
+            .amount-display { font-size: 34px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page-wrapper">
+        <header class="header">
+            <button onclick="window.history.back()" class="back-button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Payment Summary</h1>
+        </header>
+
+        <div class="dashboard-panel">
+            <header class="header-bg">
+                <p class="amount-subtitle">Total Amount Due</p>
+                <div id="amountDisplay" class="amount-display">—</div>
+            </header>
+
+            <section id="contentBody" class="content-body">
+                <div class="empty-state">Loading your appointment…</div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const contentBody = document.getElementById('contentBody');
+        const amountDisplay = document.getElementById('amountDisplay');
+
+        function getInitials(name) {
+            return (name || '').replace('Dr.', '').trim().split(' ')
+                .map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'DR';
+        }
+
+        function showEmpty(msg) {
+            amountDisplay.textContent = '—';
+            contentBody.innerHTML = `<div class="empty-state">${msg}<br><br>
+                Please <a href="/doctors">book an appointment</a> first.</div>`;
+        }
+
+        (async function load() {
+            const appointmentId = sessionStorage.getItem('appointmentId');
+            const token = localStorage.getItem('authToken');
+
+            if (!appointmentId) { showEmpty('No appointment found to pay for.'); return; }
+            if (!token) { window.location.href = '/login'; return; }
+
+            let appt;
+            try {
+                // The fee is read from the server. Nothing in this page can change it.
+                const res = await fetch(`/api/appointments/${appointmentId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.status === 401) { window.location.href = '/login'; return; }
+                if (!res.ok) { showEmpty('That appointment could not be found.'); return; }
+                appt = (await res.json()).appointment;
+            } catch (e) {
+                showEmpty('Could not reach the server.');
+                return;
+            }
+
+            const feeDisplay = 'TK ' + Number(appt.fee).toFixed(2);
+            amountDisplay.textContent = feeDisplay;
+
+            const alreadyPaid = appt.status === 'confirmed';
+
+            contentBody.innerHTML = `
+                <div class="doctor-card">
+                    <div class="doctor-avatar">${getInitials(appt.doctor_name)}</div>
+                    <div class="doctor-info">
+                        <h3>${appt.doctor_name}</h3>
+                        <p>${appt.specialty}</p>
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <div class="summary-row">
+                        <span class="summary-label">Date / Hour</span>
+                        <span class="summary-value">${appt.appt_date} / ${appt.appt_time}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Duration</span>
+                        <span class="summary-value">30 minutes</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Booking for</span>
+                        <span class="summary-value">${appt.patient_type || 'Myself'}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Patient Name</span>
+                        <span class="summary-value">${appt.patient_name || '—'}</span>
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <div class="summary-row">
+                        <span class="summary-label">Consultation Fee</span>
+                        <span class="summary-value">${feeDisplay}</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="summary-row total-row">
+                        <span>Total Amount</span>
+                        <span>${feeDisplay}</span>
+                    </div>
+                </div>
+
+                <p class="verified">Amount confirmed by AI Triage servers.</p>
+
+                <button id="payNowBtn" class="pay-btn" ${alreadyPaid ? 'disabled' : ''}>
+                    ${alreadyPaid ? 'Already paid' : 'Choose payment method'}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+            `;
+
+            if (!alreadyPaid) {
+                document.getElementById('payNowBtn')
+                    .addEventListener('click', () => { window.location.href = '/payment1'; });
+            }
+        })();
+    </script>
+</body>
+</html>

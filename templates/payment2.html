@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Card - AI Triage</title>
+    <!-- Google Fonts for League Spartan / Clean Sans-Serif -->
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'League Spartan', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #F8FAFC;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background-color: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            position: relative;
+            padding: 30px 24px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .header-back-btn {
+            position: absolute;
+            left: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #225fff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #ECF1FF;
+            transition: background-color 0.2s;
+        }
+
+        .header-back-btn:hover {
+            background-color: #D1DBFF;
+        }
+
+        .header-title {
+            font-weight: 600;
+            color: #225fff;
+            font-size: 22px;
+            text-align: center;
+        }
+
+        .card-preview {
+            width: 100%;
+            height: 185px;
+            background: linear-gradient(135deg, #225fff 0%, #1041d6 100%);
+            border-radius: 18px;
+            color: white;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 20px rgba(34, 95, 255, 0.25);
+            margin-bottom: 28px;
+            position: relative;
+        }
+
+        .card-preview-top {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .card-number-preview {
+            font-weight: 700;
+            font-size: 21px;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        .card-preview-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .card-holder-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.75;
+            margin-bottom: 2px;
+        }
+
+        .card-holder-preview {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-expiry-preview {
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 14px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: #ECF1FF;
+            border-radius: 14px;
+            border: 1px solid transparent;
+            outline: none;
+            font-size: 16px;
+            color: #225fff;
+            padding: 12px 16px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: #225fff;
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(34, 95, 255, 0.15);
+        }
+
+        #cardholderName {
+            text-transform: uppercase;
+        }
+
+        #cardNumber {
+            letter-spacing: 1px;
+        }
+
+        .save-btn {
+            width: 100%;
+            height: 50px;
+            background-color: #225fff;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(34, 95, 255, 0.3);
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .save-btn:hover {
+            background-color: #1a4ce0;
+            transform: translateY(-1px);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <header class="header">
+            <button type="button" onclick="window.history.back()" class="header-back-btn" aria-label="Go back">
+                &lt;
+            </button>
+            <h1 class="header-title">Add Card</h1>
+        </header>
+
+        <section aria-label="Card preview" class="card-preview">
+            <div class="card-preview-top">
+                <svg width="34" height="26" viewBox="0 0 34 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="34" height="26" rx="5" fill="#EAEAEA" fill-opacity="0.2"/>
+                    <rect x="4" y="4" width="8" height="6" rx="1.5" fill="white" fill-opacity="0.5"/>
+                    <rect x="22" y="4" width="8" height="6" rx="1.5" fill="white" fill-opacity="0.5"/>
+                    <rect x="4" y="16" width="8" height="6" rx="1.5" fill="white" fill-opacity="0.5"/>
+                    <rect x="22" y="16" width="8" height="6" rx="1.5" fill="white" fill-opacity="0.5"/>
+                </svg>
+            </div>
+            <div class="card-number-preview" id="previewNumber">456 667 689 777</div>
+            <div class="card-preview-bottom">
+                <div>
+                    <div class="card-holder-label">Card Holder</div>
+                    <div class="card-holder-preview" id="previewName">ZINNATUN</div>
+                </div>
+                <div>
+                    <div class="card-holder-label">Expires</div>
+                    <div class="card-expiry-preview" id="previewExpiry">04/28</div>
+                </div>
+            </div>
+        </section>
+
+        <form id="cardForm">
+            <div class="form-group">
+                <label class="form-label" for="cardholderName">Card Holder Name</label>
+                <input
+                    type="text"
+                    id="cardholderName"
+                    class="form-input"
+                    value="Zinnatun"
+                    autocomplete="cc-name"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="cardNumber">Card Number</label>
+                <input
+                    type="text"
+                    id="cardNumber"
+                    class="form-input"
+                    value="456 667 689 777"
+                    inputmode="numeric"
+                    autocomplete="cc-number"
+                    required
+                >
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="expiryDate">Expiry Date</label>
+                    <input
+                        type="text"
+                        id="expiryDate"
+                        class="form-input"
+                        value="04/28"
+                        inputmode="numeric"
+                        placeholder="MM/YY"
+                        autocomplete="cc-exp"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="cvv">CVV</label>
+                    <input
+                        type="password"
+                        id="cvv"
+                        class="form-input"
+                        value="677"
+                        inputmode="numeric"
+                        maxlength="4"
+                        placeholder="123"
+                        autocomplete="cc-csc"
+                        required
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="save-btn">Save Card</button>
+            <p class="sr-only" role="status" aria-live="polite" id="saveMessage"></p>
+        </form>
+    </main>
+
+    <script>
+        const nameInput = document.getElementById('cardholderName');
+        const numberInput = document.getElementById('cardNumber');
+        const expiryInput = document.getElementById('expiryDate');
+        const cvvInput = document.getElementById('cvv');
+
+        const previewName = document.getElementById('previewName');
+        const previewNumber = document.getElementById('previewNumber');
+        const previewExpiry = document.getElementById('previewExpiry');
+        const saveMessage = document.getElementById('saveMessage');
+
+        function formatCardNumber(value) {
+            const digits = value.replace(/\D/g, "").slice(0, 12);
+            return digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+        }
+
+        function formatExpiryDate(value) {
+            const digits = value.replace(/\D/g, "").slice(0, 4);
+            if (digits.length <= 2) {
+                return digits;
+            }
+            return digits.slice(0, 2) + '/' + digits.slice(2);
+        }
+
+        nameInput.addEventListener('input', (e) => {
+            previewName.innerText = e.target.value ? e.target.value.toUpperCase() : "ZINNATUN";
+        });
+
+        numberInput.addEventListener('input', (e) => {
+            const formatted = formatCardNumber(e.target.value);
+            numberInput.value = formatted;
+            previewNumber.innerText = formatted || "456 667 689 777";
+        });
+
+        expiryInput.addEventListener('input', (e) => {
+            const formatted = formatExpiryDate(e.target.value);
+            expiryInput.value = formatted;
+            previewExpiry.innerText = formatted || "04/28";
+        });
+
+        cvvInput.addEventListener('input', (e) => {
+            cvvInput.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+        });
+
+        document.getElementById('cardForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (!nameInput.value.trim() || !numberInput.value.trim() || !expiryInput.value.trim() || !cvvInput.value.trim()) {
+                saveMessage.innerText = "Please complete all card details.";
+                alert("Please complete all card details.");
+                return;
+            }
+
+            saveMessage.innerText = "Card saved successfully.";
+
+            // Redirect to payment summary for review before final confirmation
+            window.location.href = '/paymentsummary';
+        });
+    </script>
+</body>
+</html>

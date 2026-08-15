@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Booking Slot - AI Triage</title>
+
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           GLOBAL VARIABLES & PALETTE
+           ========================================= */
+        :root {
+            --bg-color: #F4F7FB;
+            --app-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+
+            --primary: #0284C7;
+            --primary-hover: #0369A1;
+            --primary-light: #E0F2FE;
+            --primary-soft: #F0F9FF;
+
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --field-bg: #F8FAFC;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.04), 0 4px 8px -4px rgb(0 0 0 / 0.03);
+
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+        }
+
+        /* =========================================
+           GLOBAL STYLES
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+
+            /* AMBIENT MESH BACKGROUND */
+            background-image:
+                radial-gradient(at 0% 0%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(2, 132, 199, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
+            background-size: 100% 100%;
+        }
+
+        /* Subtle grid overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(2, 132, 199, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(2, 132, 199, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { scrollbar-width: none; }
+
+        /* =========================================
+           PAGE WRAPPER & GRID
+           ========================================= */
+        .page-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 32px 80px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        .dashboard-panel {
+            background-color: var(--app-bg);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        /* =========================================
+           HEADER
+           ========================================= */
+        .header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .back-button {
+            background: var(--app-bg);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .back-button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .back-button svg { width: 18px; height: 18px; }
+
+        .header-icons {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+        }
+
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: var(--app-bg);
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+        }
+
+        .icon-circle:hover {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary-light);
+        }
+
+        .icon-circle svg { width: 18px; height: 18px; }
+
+        /* =========================================
+           DOCTOR CONTEXT BANNER
+           ========================================= */
+        .doctor-banner {
+            background: linear-gradient(145deg, var(--primary-soft) 0%, #FFFFFF 100%);
+            border: 1px solid var(--primary-light);
+            border-radius: var(--radius-lg);
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doctor-banner::after {
+            content: "";
+            position: absolute;
+            right: -50px;
+            top: -50px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(2, 132, 199, 0.04);
+            pointer-events: none;
+        }
+
+        .doctor-banner-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, #0ea5e9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+            z-index: 1;
+        }
+
+        .doctor-banner-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+            margin-bottom: 4px;
+        }
+
+        .doctor-banner-specialty {
+            font-size: 15px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .doctor-banner-fee {
+            margin-left: auto;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            white-space: nowrap;
+            background: var(--app-bg);
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid var(--primary-light);
+            box-shadow: var(--shadow-sm);
+            z-index: 1;
+        }
+
+        /* =========================================
+           SECTIONS
+           ========================================= */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title svg { color: var(--primary); }
+
+        /* =========================================
+           MONTH (DATES)
+           ========================================= */
+        .horizontal-scroll {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 8px;
+        }
+
+        .date-card {
+            min-width: 80px;
+            height: 90px;
+            border-radius: var(--radius-md);
+            background-color: var(--app-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .date-card:hover:not(.selected) {
+            border-color: var(--primary-light);
+            background-color: var(--primary-soft);
+        }
+
+        .date-card.selected {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 8px 16px rgba(2, 132, 199, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .date-day {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .date-weekday {
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Dynamic Text Colors (Used by JS) */
+        .text-white { color: #FFFFFF !important; }
+        .text-black { color: var(--text-main) !important; }
+        .text-muted { color: var(--text-light) !important; }
+
+        /* =========================================
+           AVAILABLE TIME
+           ========================================= */
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .time-slot {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background-color: var(--app-bg);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .time-available:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background-color: var(--primary-soft);
+            transform: translateY(-1px);
+        }
+
+        .time-busy {
+            background-color: var(--field-bg);
+            color: var(--text-light);
+            cursor: not-allowed;
+            border-color: var(--border);
+            text-decoration: line-through;
+            box-shadow: none;
+        }
+
+        .time-selected {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+            box-shadow: 0 6px 12px rgba(2, 132, 199, 0.25);
+        }
+
+        /* =========================================
+           PATIENT DETAILS (FORM)
+           ========================================= */
+        .toggle-row {
+            display: flex;
+            flex-direction: row;
+            background: var(--field-bg);
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .toggle-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            background-color: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-button:hover:not(.active) {
+            color: var(--text-main);
+        }
+
+        .toggle-button.active {
+            background-color: var(--app-bg);
+            color: var(--text-main);
+            border-color: var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .input-field {
+            width: 100%;
+            background-color: var(--field-bg);
+            border-radius: var(--radius-sm);
+            height: 52px;
+            padding: 0 16px;
+            margin-bottom: 24px;
+            color: var(--text-main);
+            font-weight: 500;
+            border: 1px solid var(--border);
+            outline: none;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .input-field:focus, .text-area:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+            background-color: var(--app-bg);
+        }
+
+        .input-field::placeholder { color: var(--text-light); font-weight: 400; }
+
+        .text-area {
+            width: 100%;
+            background-color: var(--field-bg);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            height: 140px;
+            padding: 16px;
+            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 500;
+            resize: none;
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+            margin-bottom: 24px;
+        }
+
+        .text-area::placeholder { color: var(--text-light); font-weight: 400; }
+
+        /* =========================================
+           ERROR BOX
+           ========================================= */
+        .error-box {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+
+        /* =========================================
+           BOTTOM NAVIGATION (CONFIRM BUTTON)
+           ========================================= */
+        .bottom-nav {
+            width: 100%;
+            background-color: var(--primary);
+            border-radius: var(--radius-sm);
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0px 8px 16px rgba(2, 132, 199, 0.25);
+            transition: all 0.2s ease;
+            margin-top: auto; /* Pushes to bottom of right column */
+        }
+
+        .bottom-nav:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0px 12px 24px rgba(2, 132, 199, 0.3);
+        }
+
+        .bottom-nav:disabled {
+            background-color: var(--text-light);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .nav-text {
+            color: #FFFFFF;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 0.01em;
+        }
+
+        /* =========================================
+           RESPONSIVE DESIGN
+           ========================================= */
+        @media (max-width: 950px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+            .page-wrapper {
+                padding: 24px 20px 60px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .doctor-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .doctor-banner-fee {
+                margin-left: 0;
+            }
+            .time-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .toggle-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="page-wrapper">
+
+        <!-- Header -->
+        <header class="header">
+            <button class="back-button" onclick="window.history.back()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span>Back</span>
+            </button>
+
+            <div style="flex-grow: 1;"></div> <!-- Spacer -->
+
+            <div class="header-icons">
+                <div class="icon-circle" title="Help">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div class="icon-circle" title="Options">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </div>
+            </div>
+        </header>
+
+        <div id="errorBox" class="error-box"></div>
+
+        <!-- DOCTOR BANNER (Full width above columns) -->
+        <div id="doctorBanner" class="doctor-banner">
+            <div id="doctorBannerAvatar" class="doctor-banner-avatar">--</div>
+            <div>
+                <div id="doctorBannerName" class="doctor-banner-name">Loading…</div>
+                <div id="doctorBannerSpecialty" class="doctor-banner-specialty"></div>
+            </div>
+            <div id="doctorBannerFee" class="doctor-banner-fee"></div>
+        </div>
+
+        <div class="layout-grid">
+
+            <!-- LEFT COLUMN: SCHEDULING -->
+            <div class="dashboard-panel">
+
+                <!-- Date -->
+                <section>
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Select Date
+                    </h2>
+                    <div id="dateContainer" class="horizontal-scroll no-scrollbar">
+                        <!-- Dates injected via JS -->
+                    </div>
+                </section>
+
+                <!-- Time -->
+                <section>
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Available Time
+                    </h2>
+                    <div id="timeContainer" class="time-grid">
+                        <!-- Times injected via JS -->
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- RIGHT COLUMN: PATIENT DETAILS -->
+            <div class="dashboard-panel">
+
+                <!-- Patient Details -->
+                <section>
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Patient Details
+                    </h2>
+
+                    <div class="toggle-row" id="patientTypeToggle">
+                        <button class="toggle-button" data-value="Yourself">Yourself</button>
+                        <button class="toggle-button" data-value="Another Person">Another Person</button>
+                    </div>
+
+                    <label class="label" for="fullName">Full Name</label>
+                    <input type="text" id="fullName" class="input-field" placeholder="Enter patient's full name" value="Zinnatun Tasnim">
+
+                    <label class="label" for="age">Age</label>
+                    <input type="number" id="age" class="input-field" placeholder="Enter patient's age" value="24">
+
+                    <label class="label">Gender</label>
+                    <div class="toggle-row" id="genderToggle">
+                        <button class="toggle-button" data-value="Male">Male</button>
+                        <button class="toggle-button" data-value="Female">Female</button>
+                        <button class="toggle-button" data-value="Other">Other</button>
+                    </div>
+                </section>
+
+                <!-- Medical Concern -->
+                <section>
+                    <h2 class="section-title">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Describe the medical concern
+                    </h2>
+                    <textarea id="problem" class="text-area" placeholder="Briefly explain the symptoms or reason for the visit..."></textarea>
+                </section>
+
+                <!-- Confirm -->
+                <button id="confirmBtn" class="bottom-nav">
+                    <span class="nav-text" id="confirmText">Confirm Appointment</span>
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- JAVASCRIPT LOGIC - KEPT UNCHANGED -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const errorBox = document.getElementById('errorBox');
+
+            function showError(msg) {
+                errorBox.textContent = msg;
+                errorBox.style.display = 'block';
+
+                errorBox.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+
+            function clearError() {
+                errorBox.style.display = 'none';
+            }
+
+            const doctorKey = new URLSearchParams(window.location.search).get('doctorKey');
+
+            let selectedDoctor = null;
+
+            async function loadDoctor() {
+                if (!doctorKey) {
+                    document.getElementById('doctorBannerName').textContent = 'No doctor selected';
+                    showError('No doctor was selected. Please go back and choose one.');
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/doctors_catalog');
+                    const data = await res.json();
+
+                    selectedDoctor = (data.doctors || []).find(d => d.doctor_key === doctorKey);
+
+                    if (!selectedDoctor) {
+                        document.getElementById('doctorBannerName').textContent = 'Doctor not found';
+                        showError('That doctor is no longer listed. Please choose another.');
+                        return;
+                    }
+
+                    document.getElementById('doctorBannerName').textContent = selectedDoctor.full_name;
+                    document.getElementById('doctorBannerSpecialty').textContent = selectedDoctor.specialty;
+                    document.getElementById('doctorBannerAvatar').textContent = selectedDoctor.initials || '--';
+                    document.getElementById('doctorBannerFee').textContent = 'TK ' + Number(selectedDoctor.fee).toFixed(0);
+
+                    await loadAvailability();
+                } catch (e) {
+                    showError("Could not load this doctor's schedule. Is the server running?");
+                }
+            }
+
+            let me = null;
+            try {
+                me = JSON.parse(localStorage.getItem('loggedInPatient') || 'null');
+            } catch (e) {}
+
+            let state = {
+                selectedDate: null,
+                selectedTime: null,
+                patientType: "Yourself",
+                gender: (me && ["Male", "Female", "Other"].includes(me.gender)) ? me.gender : "Female"
+            };
+
+            if (me) {
+                document.getElementById('fullName').value = me.full_name || '';
+                if (me.age) document.getElementById('age').value = me.age;
+            }
+
+            let availability = [];
+
+            async function loadAvailability() {
+                const res = await fetch(`/api/doctors_catalog/${doctorKey}/availability?days=14`);
+
+                if (!res.ok) { throw new Error('availability failed'); }
+
+                const data = await res.json();
+                availability = data.days;
+
+                const firstOpen = availability.find(d => d.working && d.free_count > 0);
+
+                if (firstOpen) {
+                    state.selectedDate = firstOpen.date;
+                    const free = firstOpen.slots.filter(t => !firstOpen.booked.includes(t));
+                    state.selectedTime = free[0] || null;
+                }
+
+                renderDates();
+                renderTimes();
+            }
+
+            function dayFor(iso) {
+                return availability.find(d => d.date === iso);
+            }
+
+            const dateContainer = document.getElementById('dateContainer');
+
+            function renderDates() {
+                dateContainer.innerHTML = '';
+
+                if (!availability.length) {
+                    dateContainer.innerHTML = '<div style="color:var(--text-light);font-size:14px;padding:8px;">No dates available.</div>';
+                    return;
+                }
+
+                availability.forEach(d => {
+                    const isSelected = state.selectedDate === d.date;
+                    const isClosed = !d.working || d.free_count === 0;
+
+                    const card = document.createElement('div');
+                    card.className = 'date-card' + (isSelected ? ' selected' : '');
+
+                    if (isClosed) {
+                        card.style.opacity = '0.45';
+                        card.style.cursor = 'not-allowed';
+                    }
+
+                    const textClass = isSelected ? 'text-white' : (isClosed ? 'text-muted' : 'text-black');
+
+                    card.innerHTML = `
+                        <span class="date-day ${textClass}">${d.day}</span>
+                        <span class="date-weekday ${textClass}">${d.weekday}</span>
+                    `;
+
+                    card.title = isClosed ? (d.working ? 'Fully booked' : 'Doctor not consulting') : `${d.free_count} slots free`;
+
+                    if (!isClosed) {
+                        card.addEventListener('click', () => {
+                            state.selectedDate = d.date;
+                            const free = d.slots.filter(t => !d.booked.includes(t));
+                            state.selectedTime = free[0] || null;
+                            renderDates();
+                            renderTimes();
+                        });
+                    }
+
+                    dateContainer.appendChild(card);
+                });
+            }
+
+            const timeContainer = document.getElementById('timeContainer');
+
+            function renderTimes() {
+                timeContainer.innerHTML = '';
+                const day = dayFor(state.selectedDate);
+
+                if (!day || !day.working) {
+                    timeContainer.innerHTML = '<div style="color:var(--text-light);font-size:14px;">Not consulting on this date.</div>';
+                    return;
+                }
+
+                if (!day.slots.length) {
+                    timeContainer.innerHTML = '<div style="color:var(--text-light);font-size:14px;">No slots available.</div>';
+                    return;
+                }
+
+                day.slots.forEach(label => {
+                    const isBooked = day.booked.includes(label);
+                    const isSelected = state.selectedTime === label;
+
+                    const btn = document.createElement('button');
+                    btn.className = 'time-slot ' + (isSelected ? 'time-selected' : isBooked ? 'time-busy' : 'time-available');
+                    btn.textContent = label;
+                    btn.disabled = isBooked;
+                    btn.title = isBooked ? 'Already booked' : 'Available';
+
+                    if (!isBooked) {
+                        btn.addEventListener('click', () => {
+                            state.selectedTime = label;
+                            renderTimes();
+                        });
+                    }
+
+                    timeContainer.appendChild(btn);
+                });
+            }
+
+            function initToggle(containerId, stateKey) {
+                const container = document.getElementById(containerId);
+                const buttons = container.querySelectorAll('.toggle-button');
+
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('data-value') === state[stateKey]) {
+                        btn.classList.add('active');
+                    }
+
+                    btn.addEventListener('click', () => {
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        state[stateKey] = btn.getAttribute('data-value');
+                    });
+                });
+            }
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            const confirmText = document.getElementById('confirmText');
+
+            confirmBtn.addEventListener('click', async () => {
+                clearError();
+
+                const fullName = document.getElementById('fullName').value.trim();
+                const age = document.getElementById('age').value;
+                const problem = document.getElementById('problem').value.trim();
+
+                if (!selectedDoctor) {
+                    showError('No doctor was selected. Please go back and choose one.');
+                    return;
+                }
+
+                if (!fullName) {
+                    showError('Please enter a full name.');
+                    return;
+                }
+
+                if (!state.selectedDate || !state.selectedTime) {
+                    showError('Please pick an available date and time.');
+                    return;
+                }
+
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    showError('Please log in before booking.');
+                    setTimeout(() => { window.location.href = '/login'; }, 1200);
+                    return;
+                }
+
+                confirmBtn.disabled = true;
+                confirmText.textContent = 'Booking…';
+
+                try {
+                    const res = await fetch('/api/appointments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            doctor_key: selectedDoctor.doctor_key,
+                            appt_date: state.selectedDate,
+                            appt_time: state.selectedTime,
+                            patient_type: state.patientType,
+                            patient_name: fullName,
+                            patient_age: age ? Number(age) : null,
+                            patient_gender: state.gender,
+                            problem: problem
+                        })
+                    });
+
+                    const data = await res.json();
+
+                    if (res.status === 401) {
+                        showError('Your session expired. Please log in again.');
+                        setTimeout(() => { window.location.href = '/login'; }, 1200);
+                        return;
+                    }
+
+                    if (!res.ok) {
+                        showError(data.detail || 'Could not create the appointment.');
+                        confirmBtn.disabled = false;
+                        confirmText.textContent = 'Confirm Appointment';
+                        return;
+                    }
+
+                    sessionStorage.setItem('appointmentId', data.appointment.id);
+                    window.location.href = '/paymentsummary';
+
+                } catch (e) {
+                    showError('Network error. Is the server running?');
+                    confirmBtn.disabled = false;
+                    confirmText.textContent = 'Confirm Appointment';
+                }
+            });
+
+            loadDoctor();
+            initToggle('patientTypeToggle', 'patientType');
+            initToggle('genderToggle', 'gender');
+        });
+
+    </script>
+</body>
+</html>

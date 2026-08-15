@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Profile - AI Triage</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #2673ff;
+            cursor: pointer;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover { color: #003cc2; }
+
+        .schedule-btn {
+            background-color: #2673ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .schedule-btn:hover { background-color: #1a56d6; }
+
+        .count-pill {
+            background-color: #ffffff;
+            color: #2673ff;
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 12px;
+            font-weight: 700;
+            display: none;
+        }
+
+        .icon-transparent { background: none; color: #2673ff; font-size: 26px; cursor: pointer; border: none; }
+        .icon-transparent:hover { transform: scale(1.1); }
+
+        /* Logout text button style */
+        .logout-btn {
+            background: none;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .profile-card {
+            background-color: #ccd9fc;
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .profile-top-row {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 30px;
+        }
+
+        .avatar-box {
+            width: 140px;
+            height: 140px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .avatar-box img {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        .stats-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 200px;
+        }
+
+        .badge-experience {
+            background-color: #2673ff;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(38, 115, 255, 0.2);
+        }
+
+        .focus-box {
+            background-color: #2673ff;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            flex-grow: 1;
+            box-shadow: 0 4px 10px rgba(38, 115, 255, 0.2);
+        }
+
+        .focus-box h4 {
+            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .focus-box ul {
+            padding-left: 20px;
+            line-height: 1.5;
+        }
+
+        .name-pill {
+            background-color: white;
+            width: 100%;
+            padding: 15px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .doctor-name {
+            color: #2673ff;
+            font-size: 22px;
+            font-weight: 700;
+            text-transform: capitalize;
+            margin-bottom: 2px;
+        }
+
+        .doctor-specialty {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .badge-small {
+            background-color: white;
+            color: #2673ff;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .section-title {
+            color: #2673ff;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .bio-text {
+            color: #111;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        /* Availability editor */
+        .availability-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #f8fafc;
+        }
+
+        .avail-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .avail-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            min-width: 110px;
+        }
+
+        .day-chip {
+            padding: 6px 14px;
+            border-radius: 16px;
+            border: 1px solid #cad6ff;
+            background: #fff;
+            color: #2673ff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .day-chip.on {
+            background: #2673ff;
+            border-color: #2673ff;
+            color: #fff;
+        }
+
+        .avail-input {
+            background: #fff;
+            border: 1px solid #cad6ff;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: #2673ff;
+            font-weight: 600;
+            outline: none;
+            width: 120px;
+        }
+
+        .avail-input:focus { border-color: #2673ff; box-shadow: 0 0 0 3px rgba(38,115,255,.12); }
+
+        .save-btn {
+            background: #2673ff;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 9px 22px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .save-btn:hover { background: #1a56d6; }
+        .save-btn:disabled { background: #c5d3ff; cursor: not-allowed; }
+
+        .save-note {
+            font-size: 13px;
+            margin-left: 12px;
+            color: #16a34a;
+            font-weight: 600;
+            display: none;
+        }
+
+        .save-note.error { color: #b91c1c; }
+
+        .upload-container {
+            text-align: center;
+            margin-top: auto;
+            padding-top: 20px;
+        }
+
+        .upload-btn {
+            background-color: white;
+            border: 3px solid #00aaff;
+            color: #333;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 12px 40px;
+            border-radius: 40px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .upload-btn:hover {
+            background-color: #00aaff;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 170, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.history.back()">❮</button>
+                <button class="schedule-btn" onclick="window.location.href='/doctor/requests'">
+                    📋 Requests <span id="reqCount" class="count-pill">0</span>
+                </button>
+            </div>
+            <div class="header-right">
+                <button id="homeBtn" class="icon-transparent" title="Home">🏠</button>
+                <button id="logoutBtn" class="logout-btn" title="Log Out">Log Out</button>
+            </div>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="profile-card">
+
+            <div class="profile-top-row">
+                <div class="avatar-box">
+                    <img src="https://img.icons8.com/color/144/000000/medical-doctor.png" alt="Doctor Avatar">
+                </div>
+
+                <div class="stats-column">
+                    <div class="badge-experience">
+                        🏅 <span id="docExperience">Loading...</span>
+                    </div>
+                    <div class="focus-box">
+                        <h4>Focus:</h4>
+                        <div id="docFocus" style="margin-bottom: 5px; font-weight: bold;">Loading...</div>
+                        <ul id="docFocusList">
+                            <li>General consultation</li>
+                            <li>Diagnostic review</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="name-pill">
+                <div id="docName" class="doctor-name">Loading...</div>
+                <div id="docSpecialty" class="doctor-specialty">Loading...</div>
+            </div>
+
+            <!-- These now reflect real data instead of fixed text -->
+            <div class="status-row">
+                <div class="badge-small">💰 <span id="badgeFee">—</span></div>
+                <div class="badge-small">⏰ <span id="badgeHours">—</span></div>
+                <div class="badge-small">📋 <span id="badgeBookings">—</span></div>
+            </div>
+
+        </div>
+
+        <!-- Text Bio -->
+        <h3 class="section-title">Profile</h3>
+        <p class="bio-text" id="docBio">
+            Hi, I'm looking forward to working with you to reach your health goals today.
+        </p>
+
+        <!-- Availability -->
+        <h3 class="section-title">Your Availability</h3>
+        <div class="availability-card">
+            <div class="avail-row">
+                <span class="avail-label">Working days</span>
+                <div id="dayChips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+            <div class="avail-row">
+                <span class="avail-label">Consulting hours</span>
+                <input type="time" id="slotStart" class="avail-input" value="09:00">
+                <span style="color:#64748b;">to</span>
+                <input type="time" id="slotEnd" class="avail-input" value="16:00">
+            </div>
+            <div class="avail-row">
+                <span class="avail-label">Consultation fee</span>
+                <input type="number" id="feeInput" class="avail-input" min="0" step="50" placeholder="800">
+                <span style="color:#64748b; font-size:13px;">BDT</span>
+            </div>
+            <div class="avail-row" style="margin-bottom:0;">
+                <span class="avail-label"></span>
+                <button id="saveBtn" class="save-btn">Save changes</button>
+                <span id="saveNote" class="save-note"></span>
+            </div>
+        </div>
+
+        <!-- Upload Button routes to the Triage Pipeline -->
+        <div class="upload-container">
+            <a href="/triage" class="upload-btn">Upload an X-ray</a>
+        </div>
+
+    </div>
+
+    <script>
+        const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+        let selectedDays = [];
+
+        // Home button behavior pointing directly to /home dashboard
+        document.getElementById('homeBtn').addEventListener('click', () => {
+            window.location.href = '/home';
+        });
+
+        // Logout function clearing session and directing to the first page (/index)
+        function logout() {
+            localStorage.removeItem('loggedInDoctor');
+            localStorage.removeItem('loggedInPatient');
+            localStorage.removeItem('authToken');
+            window.location.href = '/index';
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const doctorData = localStorage.getItem('loggedInDoctor');
+            const token = localStorage.getItem('authToken');
+
+            if (!doctorData || !token) {
+                window.location.replace('/login');
+                return;
+            }
+
+            // Show what we have locally straight away, then correct it from
+            // the server once /api/doctor/me answers.
+            const local = JSON.parse(doctorData);
+            paintIdentity(local.full_name, local.specialty, local.experience);
+
+            try {
+                const res = await fetch('/api/doctor/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.status === 401 || res.status === 403) { logout(); return; }
+                if (!res.ok) throw new Error('lookup failed');
+
+                const data = await res.json();
+                const d = data.doctor;
+
+                paintIdentity(d.full_name, d.specialty, d.experience);
+
+                document.getElementById('badgeFee').textContent = 'TK ' + Number(d.fee).toFixed(0);
+                document.getElementById('badgeHours').textContent =
+                    daysLabel(d.available_days) + ' / ' + pretty(d.slot_start) + ' - ' + pretty(d.slot_end);
+
+                const upcoming = (data.appointments || []).filter(a => a.status === 'confirmed').length;
+                document.getElementById('badgeBookings').textContent =
+                    upcoming === 1 ? '1 booking' : upcoming + ' bookings';
+
+                if (upcoming > 0) {
+                    const pill = document.getElementById('reqCount');
+                    pill.textContent = upcoming;
+                    pill.style.display = 'inline-block';
+                }
+
+                // Fill the editor
+                selectedDays = d.available_days.slice();
+                document.getElementById('slotStart').value = d.slot_start;
+                document.getElementById('slotEnd').value = d.slot_end;
+                document.getElementById('feeInput').value = Number(d.fee).toFixed(0);
+                renderChips();
+
+            } catch (e) {
+                document.getElementById('badgeFee').textContent = 'unavailable';
+                document.getElementById('badgeHours').textContent = 'unavailable';
+                document.getElementById('badgeBookings').textContent = 'unavailable';
+            }
+        });
+
+        function paintIdentity(name, specialty, experience) {
+            const fullName = (name || '').toLowerCase().startsWith('dr')
+                ? name : 'Dr. ' + name;
+            specialty = specialty || 'General Practice';
+
+            document.getElementById('docName').textContent = fullName;
+            document.getElementById('docSpecialty').textContent = specialty;
+            document.getElementById('docExperience').textContent =
+                (experience || 5) + ' years experience';
+
+            const lastName = fullName.split(' ').pop();
+            document.getElementById('docBio').textContent =
+                `Hi, I'm Dr. ${lastName}, I'm looking forward to working with you to reach your health goals today.`;
+
+            document.getElementById('docFocus').textContent = specialty;
+            const focusList = document.getElementById('docFocusList');
+            const s = specialty.toLowerCase();
+
+            if (s.includes('lung') || s.includes('pulmon')) {
+                focusList.innerHTML = `<li>Lung problems</li><li>Lung specialist</li>`;
+            } else if (s.includes('ortho') || s.includes('bone')) {
+                focusList.innerHTML = `<li>Fracture repair</li><li>Joint health</li>`;
+            } else if (s.includes('neuro') || s.includes('brain')) {
+                focusList.innerHTML = `<li>Tumor screening</li><li>Neurological care</li>`;
+            } else if (s.includes('cardio') || s.includes('heart')) {
+                focusList.innerHTML = `<li>Cardiac assessment</li><li>Chest imaging review</li>`;
+            } else {
+                focusList.innerHTML = `<li>Comprehensive care</li><li>Diagnostic imaging</li>`;
+            }
+        }
+
+        function pretty(hhmm) {
+            if (!hhmm) return '';
+            const [h, m] = hhmm.split(':').map(Number);
+            const suffix = h < 12 ? 'AM' : 'PM';
+            return (h % 12 || 12) + (m ? ':' + String(m).padStart(2, '0') : '') + ' ' + suffix;
+        }
+
+        function daysLabel(days) {
+            if (!days || !days.length) return 'No days set';
+            const sorted = days.slice().sort((a, b) => a - b);
+            // Contiguous run reads better as a range than a list.
+            const contiguous = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
+            return (contiguous && sorted.length > 2)
+                ? WEEKDAYS[sorted[0]] + ' - ' + WEEKDAYS[sorted[sorted.length - 1]]
+                : sorted.map(d => WEEKDAYS[d]).join(', ');
+        }
+
+        function renderChips() {
+            const wrap = document.getElementById('dayChips');
+            wrap.innerHTML = '';
+            WEEKDAYS.forEach((label, idx) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'day-chip' + (selectedDays.includes(idx) ? ' on' : '');
+                chip.textContent = label;
+                chip.addEventListener('click', () => {
+                    selectedDays = selectedDays.includes(idx)
+                        ? selectedDays.filter(d => d !== idx)
+                        : selectedDays.concat(idx);
+                    renderChips();
+                });
+                wrap.appendChild(chip);
+            });
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('saveBtn');
+            const note = document.getElementById('saveNote');
+            note.style.display = 'none';
+            note.className = 'save-note';
+
+            if (selectedDays.length === 0) {
+                note.textContent = 'Pick at least one working day.';
+                note.className = 'save-note error';
+                note.style.display = 'inline';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const res = await fetch('/api/doctor/me', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    },
+                    body: JSON.stringify({
+                        available_days: selectedDays,
+                        slot_start: document.getElementById('slotStart').value,
+                        slot_end: document.getElementById('slotEnd').value,
+                        fee: Number(document.getElementById('feeInput').value)
+                    })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    note.textContent = data.detail || 'Could not save.';
+                    note.className = 'save-note error';
+                } else {
+                    note.textContent = 'Saved. Patients see this immediately.';
+                    document.getElementById('badgeFee').textContent =
+                        'TK ' + Number(document.getElementById('feeInput').value).toFixed(0);
+                    document.getElementById('badgeHours').textContent =
+                        daysLabel(selectedDays) + ' / ' +
+                        pretty(document.getElementById('slotStart').value) + ' - ' +
+                        pretty(document.getElementById('slotEnd').value);
+                }
+
+            } catch (e) {
+                note.textContent = 'Network error.';
+                note.className = 'save-note error';
+            } finally {
+                note.style.display = 'inline';
+                btn.disabled = false;
+                btn.textContent = 'Save changes';
+            }
+        });
+    </script>
+</body>
+</html>
+

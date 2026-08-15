@@ -1,0 +1,555 @@
+<!--
+=====================================================================
+REPLACEMENT for the results section of triage.html
+
+Two additions:
+  1. An annotated viewer: the original radiograph with Grad-CAM derived
+     boxes positioned over it. Coordinates arrive normalized 0-1 from
+     /analyze, so they scale correctly at any display size.
+  2. A structured clinical plan replacing the single <pre> blob --
+     severity-coloured header, patient context, actions, OTC guidance,
+     monitoring, population cautions, and red flags as separate blocks.
+
+INSTRUCTIONS
+  A. Paste the <style> block below into your existing <style> tag.
+  B. Replace everything between <div id="resultsWrapper"> and its closing
+     </div> with the RESULTS MARKUP section.
+  C. Replace the two form submit handlers with the SCRIPT section.
+=====================================================================
+-->
+
+
+<!-- ================= A. STYLES (append to your <style> tag) ========= -->
+<style>
+    /* ---------- annotated viewer ---------- */
+    .annotated-wrap {
+        position: relative;
+        display: inline-block;
+        line-height: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        max-width: 100%;
+    }
+
+    .annotated-wrap img { max-width: 100%; height: auto; display: block; }
+
+    .region-box {
+        position: absolute;
+        border: 2px solid var(--warm);
+        background: rgba(255, 92, 77, .16);
+        border-radius: 6px;
+        pointer-events: none;
+        box-shadow: 0 0 0 1px rgba(0,0,0,.25);
+    }
+
+    .region-box.safe {
+        border-color: var(--safe);
+        background: rgba(14, 159, 110, .16);
+    }
+
+    .region-box.uncertain {
+        border-color: #E0A62B;
+        background: rgba(224, 166, 43, .16);
+        border-style: dashed;
+    }
+
+    .region-tag {
+        position: absolute;
+        top: -1px;
+        left: -2px;
+        transform: translateY(-100%);
+        background: var(--warm);
+        color: #fff;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        letter-spacing: .03em;
+        padding: 3px 7px;
+        border-radius: 5px 5px 5px 0;
+        white-space: nowrap;
+        line-height: 1.4;
+    }
+
+    .region-box.safe .region-tag { background: var(--safe); }
+    .region-box.uncertain .region-tag { background: #E0A62B; }
+
+    .viewer-note {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        letter-spacing: .05em;
+        color: rgba(219,229,247,.5);
+        margin-top: 12px;
+        line-height: 1.6;
+    }
+
+    /* ---------- structured clinical plan ---------- */
+    .plan-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--safe);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-top: 20px;
+        box-shadow: 0 1px 2px rgba(11,18,32,.03), 0 12px 28px -22px rgba(11,18,32,.28);
+    }
+
+    .plan-card.urgency-URGENT { border-left-color: var(--warm); }
+    .plan-card.urgency-PROMPT { border-left-color: #E0A62B; }
+    .plan-card.urgency-ROUTINE { border-left-color: var(--safe); }
+
+    .plan-header {
+        padding: 17px 24px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .plan-headline { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+
+    .urgency-chip {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        padding: 5px 11px;
+        border-radius: 999px;
+        font-weight: 600;
+    }
+
+    .chip-URGENT  { background: #FFECEA; color: #C2352A; }
+    .chip-PROMPT  { background: var(--amber-bg); color: var(--amber); }
+    .chip-ROUTINE { background: #E7F7F1; color: #0A7A54; }
+
+    .plan-body { padding: 22px 24px 24px; }
+
+    .ctx-strip {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding-bottom: 16px;
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .ctx-pill {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10.5px;
+        letter-spacing: .04em;
+        background: #F2F5FA;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 5px 10px;
+        color: var(--muted);
+    }
+
+    .ctx-pill b { color: var(--ink); font-weight: 600; }
+
+    .plan-summary { font-size: 14.5px; line-height: 1.6; color: #33405A; margin-bottom: 22px; }
+
+    .plan-section { margin-bottom: 22px; }
+    .plan-section:last-child { margin-bottom: 0; }
+
+    .plan-section h4 {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10.5px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .plan-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+
+    .plan-list li {
+        font-size: 14px;
+        line-height: 1.55;
+        color: #33405A;
+        padding-left: 20px;
+        position: relative;
+    }
+
+    .plan-list li::before {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 8px;
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: var(--brand);
+    }
+
+    .caution-list li::before { background: #E0A62B; }
+
+    .redflag-box {
+        background: #FFF5F4;
+        border: 1px solid #FBD9D5;
+        border-radius: 11px;
+        padding: 16px 18px;
+    }
+
+    .redflag-box h4 { color: #C2352A; }
+    .redflag-box .plan-list li { color: #7A2A22; }
+    .redflag-box .plan-list li::before { background: var(--warm); }
+
+    .plan-disclaimer {
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+        margin-top: 22px;
+    }
+
+    .plan-meta {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        letter-spacing: .06em;
+        color: var(--muted);
+        margin-top: 10px;
+    }
+</style>
+
+
+<!-- ================= B. RESULTS MARKUP ============================== -->
+<div id="resultsWrapper" class="hidden">
+
+    <div class="results-head">
+        <h2>Findings</h2>
+        <span>This session</span>
+    </div>
+
+    <section class="grid-container">
+
+        <div id="findingsPanel" class="card hidden">
+            <div class="readings">
+                <div class="reading-row">
+                    <dt>Routed to</dt>
+                    <dd><span id="organText" class="text-highlight-blue"></span></dd>
+                </div>
+                <div class="reading-row">
+                    <dt>Diagnosis</dt>
+                    <dd><span id="conditionText" class="text-highlight-red"></span></dd>
+                </div>
+                <div>
+                    <div class="reading-row">
+                        <dt>Confidence</dt>
+                        <dd><span id="confidenceText"></span>%</dd>
+                    </div>
+                    <div class="meter"><i id="confidenceBar"></i></div>
+                </div>
+            </div>
+
+            <div class="prose-block">
+                <div class="prose-label">Impression</div>
+                <p id="impressionText"></p>
+            </div>
+
+            <div class="prose-block">
+                <div class="prose-label">Triage</div>
+                <p id="triageText" class="quiet"></p>
+            </div>
+        </div>
+
+        <div id="resultsDashboard" class="viewer hidden">
+            <div class="step">Attention regions</div>
+            <h3 class="card-title">Where the model looked</h3>
+            <p class="card-sub">Boxes are derived from the Grad-CAM activation map for this specific scan.</p>
+
+            <div class="annotated-wrap" id="annotatedWrap">
+                <img id="annotatedImage" src="" alt="Uploaded scan with model attention regions marked">
+                <!-- region boxes injected here by JS -->
+            </div>
+
+            <p class="viewer-note" id="regionNote"></p>
+
+            <div class="image-grid" style="margin-top:16px;">
+                <div class="img-card">
+                    <h5>Heat overlay</h5>
+                    <img id="heatmapImage" src="" alt="Grad-CAM heat overlay">
+                </div>
+                <div class="img-card" id="deltaCard" style="display:none;">
+                    <h5>Change since last</h5>
+                    <img id="deltaImage" src="" alt="Change map versus previous scan">
+                </div>
+            </div>
+
+            <div class="swatches">
+                <span><i style="background:#FF5C4D"></i>Progression</span>
+                <span><i style="background:#35C5F0"></i>Healing</span>
+            </div>
+        </div>
+
+    </section>
+
+    <section>
+        <div id="planCard" class="plan-card hidden">
+            <div class="plan-header">
+                <span class="plan-headline" id="planHeadline"></span>
+                <span class="urgency-chip" id="urgencyChip"></span>
+            </div>
+            <div class="plan-body">
+                <div class="ctx-strip" id="ctxStrip"></div>
+                <p class="plan-summary" id="planSummary"></p>
+
+                <div class="plan-section" id="actionsSection">
+                    <h4>Do now</h4>
+                    <ul class="plan-list" id="actionsList"></ul>
+                </div>
+
+                <div class="plan-section" id="otcSection">
+                    <h4>Over-the-counter guidance</h4>
+                    <ul class="plan-list" id="otcList"></ul>
+                </div>
+
+                <div class="plan-section" id="monitorSection">
+                    <h4>Watch for over 24-48 hours</h4>
+                    <ul class="plan-list" id="monitorList"></ul>
+                </div>
+
+                <div class="plan-section" id="cautionSection">
+                    <h4>Applies to this patient specifically</h4>
+                    <ul class="plan-list caution-list" id="cautionList"></ul>
+                </div>
+
+                <div class="plan-section redflag-box" id="redflagSection">
+                    <h4>Go to emergency care if any of these occur</h4>
+                    <ul class="plan-list" id="redflagList"></ul>
+                </div>
+
+                <p class="plan-disclaimer" id="planDisclaimer"></p>
+                <p class="plan-meta" id="planMeta"></p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+
+<!-- ================= C. SCRIPT ====================================== -->
+<script>
+    // ---- helpers ----------------------------------------------------
+    function fillList(ulId, sectionId, items) {
+        const ul = document.getElementById(ulId);
+        const section = document.getElementById(sectionId);
+        ul.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = '';
+        items.forEach(text => {
+            const li = document.createElement('li');
+            li.innerText = text;
+            ul.appendChild(li);
+        });
+    }
+
+    function drawRegions(regions, diagnosis) {
+        const wrap = document.getElementById('annotatedWrap');
+        const note = document.getElementById('regionNote');
+
+        // Clear any boxes from a previous scan
+        wrap.querySelectorAll('.region-box').forEach(el => el.remove());
+
+        if (!regions || regions.length === 0) {
+            note.innerText = 'No region crossed the activation threshold — '
+                + 'the model’s attention was diffuse rather than focal.';
+            return;
+        }
+
+        const dxUpper = String(diagnosis).toUpperCase();
+        const isNormal = dxUpper.includes('NORMAL');
+        const isUncertain = dxUpper.includes('INCONCLUSIVE');
+
+        regions.forEach(r => {
+            const box = document.createElement('div');
+            box.className = 'region-box'
+                + (isNormal ? ' safe' : '')
+                + (isUncertain ? ' uncertain' : '');
+
+            // Coordinates arrive normalized 0-1, so percentages scale with
+            // whatever size the image is actually rendered at.
+            box.style.left   = (r.x * 100) + '%';
+            box.style.top    = (r.y * 100) + '%';
+            box.style.width  = (r.w * 100) + '%';
+            box.style.height = (r.h * 100) + '%';
+
+            const tag = document.createElement('span');
+            tag.className = 'region-tag';
+            tag.innerText = r.label + ' (' + Math.round(r.score * 100) + '%)';
+            box.appendChild(tag);
+
+            wrap.appendChild(box);
+        });
+
+        note.innerText = regions.length + ' region'
+            + (regions.length > 1 ? 's' : '')
+            + ' above threshold. These show where the classifier focused — '
+            + 'they are not lesion boundaries, and every box carries the same '
+            + 'label because the model is binary.';
+    }
+
+    // ---- scan upload ------------------------------------------------
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const originalText = analyzeBtn.innerText;
+        analyzeBtn.innerText = "Analyzing scan…";
+        analyzeBtn.disabled = true;
+
+        const fileInput = document.getElementById('imageInput');
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("patient_id", document.getElementById('patientId').value);
+
+        try {
+            const response = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (data.status === "success") {
+                document.getElementById('resultsWrapper').classList.remove('hidden');
+                document.getElementById('resultsDashboard').classList.remove('hidden');
+                document.getElementById('findingsPanel').classList.remove('hidden');
+
+                document.getElementById('organText').innerText = data.scan_type_detected;
+                document.getElementById('confidenceText').innerText = data.confidence;
+                document.getElementById('conditionText').innerText = data.diagnosis;
+                document.getElementById('impressionText').innerText = data.clinical_data.impression;
+                document.getElementById('triageText').innerText = data.clinical_data.triage;
+                document.getElementById('heatmapImage').src = "data:image/jpeg;base64," + data.heatmap;
+
+                // Annotated view uses the plain radiograph when the backend
+                // sends it, falling back to the heat overlay otherwise.
+                document.getElementById('annotatedImage').src =
+                    "data:image/jpeg;base64," + (data.original_image || data.heatmap);
+
+                // Wait for the image to lay out before positioning boxes
+                const annotated = document.getElementById('annotatedImage');
+                if (annotated.complete) {
+                    drawRegions(data.regions, data.diagnosis);
+                } else {
+                    annotated.onload = () => drawRegions(data.regions, data.diagnosis);
+                }
+
+                document.getElementById('confidenceBar').style.width = data.confidence + '%';
+                const dx = document.getElementById('conditionText');
+                const normal = String(data.diagnosis).toUpperCase().includes('NORMAL');
+                dx.classList.toggle('text-highlight-red', !normal);
+                dx.style.color = normal ? 'var(--safe)' : '';
+
+                document.getElementById('symPatientId').value =
+                    document.getElementById('patientId').value;
+
+                if (data.has_historical_timeline) {
+                    document.getElementById('deltaCard').style.display = 'block';
+                    document.getElementById('deltaImage').src =
+                        "data:image/jpeg;base64," + data.delta_heatmap;
+                } else {
+                    document.getElementById('deltaCard').style.display = 'none';
+                }
+
+                document.getElementById('resultsWrapper')
+                    .scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                alert("Error: " + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Analysis failed. Check console.");
+        } finally {
+            analyzeBtn.innerText = originalText;
+            analyzeBtn.disabled = false;
+        }
+    });
+
+    // ---- symptom check-in -------------------------------------------
+    document.getElementById('symptomForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitStatusBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Building care plan…";
+        submitBtn.disabled = true;
+
+        const payload = {
+            patient_id: document.getElementById('symPatientId').value,
+            pain_level: parseInt(document.getElementById('painLevel').value),
+            primary_symptom: document.getElementById('primarySymptom').value,
+            symptom_progression: document.getElementById('symptomProgression').value
+        };
+
+        try {
+            const response = await fetch('/patient/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+                const plan = data.clinical_plan;
+                document.getElementById('resultsWrapper').classList.remove('hidden');
+
+                const card = document.getElementById('planCard');
+                card.classList.remove('hidden',
+                    'urgency-URGENT', 'urgency-PROMPT', 'urgency-ROUTINE');
+                card.classList.add('urgency-' + plan.urgency);
+
+                document.getElementById('planHeadline').innerText = plan.headline;
+
+                const chip = document.getElementById('urgencyChip');
+                chip.className = 'urgency-chip chip-' + plan.urgency;
+                chip.innerText = {
+                    URGENT:  'See someone today',
+                    PROMPT:  'Within 24-48 hours',
+                    ROUTINE: 'Self-care'
+                }[plan.urgency] || plan.urgency;
+
+                // Patient context pills -- only render what we actually have
+                const ctx = plan.patient_context || {};
+                const strip = document.getElementById('ctxStrip');
+                strip.innerHTML = '';
+                const pills = [];
+                if (ctx.age != null)        pills.push(['Age', ctx.age]);
+                if (ctx.gender)             pills.push(['Sex', ctx.gender]);
+                if (ctx.weight_kg != null)  pills.push(['Weight', ctx.weight_kg + ' kg']);
+                if (ctx.known_problem)      pills.push(['History', ctx.known_problem]);
+                if (data.correlated_scan_context)
+                    pills.push(['Scan', data.correlated_scan_context]);
+
+                pills.forEach(([k, v]) => {
+                    const el = document.createElement('span');
+                    el.className = 'ctx-pill';
+                    el.innerHTML = k + ' <b>' + v + '</b>';
+                    strip.appendChild(el);
+                });
+                strip.style.display = pills.length ? '' : 'none';
+
+                document.getElementById('planSummary').innerText = plan.summary || '';
+
+                fillList('actionsList',  'actionsSection', plan.immediate_actions);
+                fillList('otcList',      'otcSection',     plan.otc_guidance);
+                fillList('monitorList',  'monitorSection', plan.monitoring);
+                fillList('cautionList',  'cautionSection', plan.cautions);
+                fillList('redflagList',  'redflagSection', plan.red_flags);
+
+                document.getElementById('planDisclaimer').innerText = plan.disclaimer || '';
+                document.getElementById('planMeta').innerText =
+                    'Generated ' + (plan.generated_at || '')
+                    + (plan.llm_available === false ? ' · offline fallback guidance' : '');
+
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to generate care plan.");
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+</script>

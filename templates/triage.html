@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading station — AI Triage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ink:       #0B1220;
+            --ink-2:     #121C2E;
+            --paper:     #F7F9FC;
+            --surface:   #FFFFFF;
+            --line:      #E4EAF4;
+            --muted:     #62708A;
+            --brand:     #2260FF;
+            --warm:      #FF5C4D;
+            --cool:      #35C5F0;
+            --amber:     #A26207;
+            --amber-bg:  #FEF7E6;
+            --safe:      #0E9F6E;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { background: var(--paper); }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(46% 40% at 82% 6%,  rgba(34,96,255,.10), transparent 70%),
+                radial-gradient(38% 34% at 6% 30%,  rgba(255,92,77,.055), transparent 72%),
+                radial-gradient(44% 40% at 92% 74%, rgba(53,197,240,.075), transparent 72%),
+                var(--paper);
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(11,18,32,.028) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(11,18,32,.028) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: radial-gradient(88% 70% at 50% 32%, #000 20%, transparent 100%);
+            -webkit-mask-image: radial-gradient(88% 70% at 50% 32%, #000 20%, transparent 100%);
+        }
+
+        body {
+            background: transparent;
+            color: var(--ink);
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            padding: 0 0 60px;
+        }
+
+        .wrap { max-width: 1120px; margin: 0 auto; padding: 0 26px; }
+
+        /* ---------- top bar ---------- */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 22px 0 18px;
+            flex-wrap: wrap;
+        }
+
+        .ident { display: flex; align-items: center; gap: 12px; }
+
+        .mark {
+            width: 32px; height: 32px;
+            border-radius: 9px;
+            background: var(--brand);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .mark::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 3px;
+            background: radial-gradient(circle at 36% 36%, var(--warm), transparent 72%);
+        }
+
+        .ident h1 { font-size: 17px; font-weight: 600; letter-spacing: -.015em; line-height: 1.2; }
+
+        .ident .who {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .06em;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .back-btn {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-decoration: none;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            border-radius: 999px;
+            padding: 9px 17px;
+            transition: border-color .16s, color .16s;
+        }
+
+        .back-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+        /* ---------- safety notice ---------- */
+        .warning-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            background: var(--amber-bg);
+            border: 1px solid #F3E2BC;
+            border-left: 3px solid #E0A62B;
+            border-radius: 12px;
+            padding: 13px 17px;
+            color: var(--amber);
+            font-size: 13.5px;
+            line-height: 1.55;
+            margin-bottom: 30px;
+        }
+
+        .warning-banner svg { flex-shrink: 0; margin-top: 1px; }
+
+        /* ---------- panels ---------- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 26px;
+            box-shadow: 0 1px 2px rgba(11,18,32,.03), 0 12px 28px -22px rgba(11,18,32,.28);
+        }
+
+        .step {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--brand);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 9px;
+        }
+
+        .step::before { content: ''; width: 18px; height: 1px; background: var(--brand); }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -.018em;
+            margin-bottom: 6px;
+        }
+
+        .card-sub {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.55;
+            margin-bottom: 20px;
+        }
+
+        /* ---------- form ---------- */
+        .form-label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 18px 0 7px;
+            display: block;
+            letter-spacing: -.005em;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #FAFBFD;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            padding: 12px 14px;
+            font-size: 14.5px;
+            font-family: inherit;
+            color: var(--ink);
+            outline: none;
+            transition: border-color .16s, background .16s, box-shadow .16s;
+        }
+
+        .form-input:focus {
+            border-color: var(--brand);
+            background: var(--surface);
+            box-shadow: 0 0 0 3px rgba(34,96,255,.12);
+        }
+
+        .form-input[readonly] {
+            background: #F2F5FA;
+            color: var(--muted);
+            cursor: not-allowed;
+        }
+
+        input[type="file"].form-input { padding: 9px; font-size: 13.5px; }
+
+        input[type="file"]::file-selector-button {
+            background: var(--ink);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+
+        input[type="file"]::file-selector-button:hover { background: var(--ink-2); }
+
+        select.form-input {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%2362708A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+        }
+
+        .scale-row { display: flex; align-items: center; gap: 15px; }
+
+        input[type="range"] {
+            flex: 1;
+            appearance: none;
+            height: 5px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--cool), var(--brand) 45%, var(--warm));
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2.5px solid var(--ink);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(11,18,32,.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2.5px solid var(--ink);
+            cursor: pointer;
+        }
+
+        input[type="range"]:focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; }
+
+        .scale-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 19px;
+            font-weight: 600;
+            min-width: 34px;
+            text-align: right;
+        }
+
+        .scale-ends {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 7px;
+        }
+
+        .primary-button {
+            width: 100%;
+            background: var(--ink);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            color: #fff;
+            font-size: 14.5px;
+            font-family: inherit;
+            font-weight: 600;
+            letter-spacing: -.005em;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: background .16s, transform .16s;
+        }
+
+        .primary-button:hover { background: var(--ink-2); transform: translateY(-1px); }
+        .primary-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+        .primary-button:disabled { background: #A9B4C7; cursor: not-allowed; transform: none; }
+
+        .field-hint { font-size: 12.5px; color: var(--muted); margin-top: 7px; line-height: 1.45; }
+
+        /* ---------- results ---------- */
+        .hidden { display: none !important; }
+
+        .results-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 14px;
+            border-top: 1px solid var(--line);
+            padding-top: 28px;
+            margin: 12px 0 20px;
+        }
+
+        .results-head h2 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+
+        .results-head span {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .readings { display: flex; flex-direction: column; gap: 16px; }
+
+        .reading-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 14px;
+        }
+
+        .reading-row dt {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .reading-row dd { font-size: 16px; font-weight: 600; letter-spacing: -.015em; text-align: right; }
+
+        .text-highlight-blue { color: var(--brand); }
+        .text-highlight-red { color: var(--warm); }
+
+        .meter {
+            height: 5px;
+            border-radius: 3px;
+            background: #EDF1F8;
+            overflow: hidden;
+            margin-top: 9px;
+        }
+
+        .meter i {
+            display: block;
+            height: 100%;
+            width: 0;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--cool), var(--brand));
+            transition: width .7s cubic-bezier(.2,.7,.3,1);
+        }
+
+        .prose-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 7px;
+        }
+
+        .prose-block { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 20px; }
+        .prose-block p { font-size: 14.5px; line-height: 1.6; color: #33405A; }
+        .prose-block p.quiet { color: var(--muted); }
+
+        .viewer {
+            background: var(--ink);
+            border-radius: 16px;
+            padding: 22px;
+            border: 1px solid var(--ink);
+            box-shadow: 0 20px 44px -28px rgba(11,18,32,.6);
+        }
+
+        .viewer .card-title, .viewer .card-sub { color: #fff; }
+        .viewer .card-sub { color: rgba(219,229,247,.6); }
+
+        .viewer .step { color: var(--cool); }
+        .viewer .step::before { background: var(--cool); }
+
+        .image-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .img-card {
+            background: #060B14;
+            border: 1px solid rgba(219,229,247,.1);
+            border-radius: 12px;
+            padding: 13px;
+            text-align: center;
+        }
+
+        .img-card h5 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(219,229,247,.55);
+            margin-bottom: 11px;
+            font-weight: 500;
+        }
+
+        .img-card img { max-width: 100%; height: auto; border-radius: 7px; display: block; }
+
+        .swatches {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .05em;
+            color: rgba(219,229,247,.55);
+        }
+
+        .swatches i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+
+        /* ---------- annotated viewer ---------- */
+        .annotated-wrap {
+            position: relative;
+            display: inline-block;
+            line-height: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .annotated-wrap img { max-width: 100%; height: auto; display: block; }
+
+        .region-box {
+            position: absolute;
+            border: 2px solid var(--warm);
+            background: rgba(255, 92, 77, .16);
+            border-radius: 6px;
+            pointer-events: none;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.25);
+        }
+
+        .region-box.safe {
+            border-color: var(--safe);
+            background: rgba(14, 159, 110, .16);
+        }
+
+        .region-box.uncertain {
+            border-color: #E0A62B;
+            background: rgba(224, 166, 43, .16);
+            border-style: dashed;
+        }
+
+        .region-tag {
+            position: absolute;
+            top: -1px;
+            left: -2px;
+            transform: translateY(-100%);
+            background: var(--warm);
+            color: #fff;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .03em;
+            padding: 3px 7px;
+            border-radius: 5px 5px 5px 0;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+
+        .region-box.safe .region-tag { background: var(--safe); }
+        .region-box.uncertain .region-tag { background: #E0A62B; }
+
+        .viewer-note {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .05em;
+            color: rgba(219,229,247,.5);
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        /* ---------- structured clinical plan ---------- */
+        .plan-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--safe);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-top: 20px;
+            box-shadow: 0 1px 2px rgba(11,18,32,.03), 0 12px 28px -22px rgba(11,18,32,.28);
+        }
+
+        .plan-card.urgency-URGENT { border-left-color: var(--warm); }
+        .plan-card.urgency-PROMPT { border-left-color: #E0A62B; }
+        .plan-card.urgency-ROUTINE { border-left-color: var(--safe); }
+
+        .plan-header {
+            padding: 17px 24px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .plan-headline { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+
+        .urgency-chip {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .chip-URGENT  { background: #FFECEA; color: #C2352A; }
+        .chip-PROMPT  { background: var(--amber-bg); color: var(--amber); }
+        .chip-ROUTINE { background: #E7F7F1; color: #0A7A54; }
+
+        .plan-body { padding: 22px 24px 24px; }
+
+        .ctx-strip {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding-bottom: 16px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .ctx-pill {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: .04em;
+            background: #F2F5FA;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            padding: 5px 10px;
+            color: var(--muted);
+        }
+
+        .ctx-pill b { color: var(--ink); font-weight: 600; }
+
+        .plan-summary { font-size: 14.5px; line-height: 1.6; color: #33405A; margin-bottom: 22px; }
+
+        .plan-section { margin-bottom: 22px; }
+        .plan-section:last-child { margin-bottom: 0; }
+
+        .plan-section h4 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .plan-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+
+        .plan-list li {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #33405A;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .plan-list li::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 8px;
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--brand);
+        }
+
+        .caution-list li::before { background: #E0A62B; }
+
+        .redflag-box {
+            background: #FFF5F4;
+            border: 1px solid #FBD9D5;
+            border-radius: 11px;
+            padding: 16px 18px;
+        }
+
+        .redflag-box h4 { color: #C2352A; }
+        .redflag-box .plan-list li { color: #7A2A22; }
+        .redflag-box .plan-list li::before { background: var(--warm); }
+
+        .plan-disclaimer {
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: var(--muted);
+            border-top: 1px solid var(--line);
+            padding-top: 16px;
+            margin-top: 22px;
+        }
+
+        .plan-meta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .06em;
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        /* ---------- doctor suggestions ---------- */
+        .docs-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 24px;
+            margin-top: 20px;
+            box-shadow: 0 1px 2px rgba(11,18,32,.03), 0 12px 28px -22px rgba(11,18,32,.28);
+        }
+
+        .docs-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+
+        .docs-head h3 { font-size: 16px; font-weight: 600; letter-spacing: -.015em; }
+
+        .docs-specialty {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            background: #EEF3FF;
+            color: var(--brand);
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .docs-note { font-size: 13.5px; color: var(--muted); line-height: 1.55; margin-bottom: 18px; }
+
+        .docs-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .doc-row {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 13px 15px;
+            text-decoration: none;
+            color: inherit;
+            background: #FAFBFD;
+            transition: border-color .16s, transform .16s, background .16s;
+        }
+
+        .doc-row:hover {
+            border-color: var(--brand);
+            background: var(--surface);
+            transform: translateY(-1px);
+        }
+
+        .doc-avatar {
+            width: 40px; height: 40px;
+            border-radius: 11px;
+            background: var(--brand);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .doc-row.is-general .doc-avatar { background: var(--muted); }
+
+        .doc-info { min-width: 0; flex: 1; }
+        .doc-name { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+
+        .doc-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doc-fee {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink);
+            flex-shrink: 0;
+        }
+
+        .docs-subhead {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 20px 0 10px;
+        }
+
+        .docs-empty {
+            font-size: 13.5px;
+            color: var(--muted);
+            background: #FAFBFD;
+            border: 1px dashed var(--line);
+            border-radius: 11px;
+            padding: 16px;
+            line-height: 1.55;
+        }
+
+        .docs-why {
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.55;
+            border-top: 1px solid var(--line);
+            padding-top: 15px;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 700px) {
+            .docs-list { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 880px) {
+            .grid-container { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 560px) {
+            .wrap { padding: 0 18px; }
+            .image-grid { grid-template-columns: 1fr; }
+            .reading-row { flex-direction: column; align-items: flex-start; gap: 3px; }
+            .reading-row dd { text-align: left; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+
+    <header class="topbar">
+        <div class="ident">
+            <span class="mark"></span>
+            <div>
+                <h1>Reading station</h1>
+                <div class="who" id="headerUserLabel"></div>
+            </div>
+        </div>
+        <!-- app.py serves welcome.html at "/" -- there is no /home route -->
+        <a href="/" class="back-btn">&larr; Home</a>
+    </header>
+
+    <div class="warning-banner">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>A research prototype. Every reading here needs a qualified physician's review before it informs any treatment decision.</span>
+    </div>
+
+    <section class="grid-container">
+
+        <div class="card">
+            <div class="step">Step one</div>
+            <h3 class="card-title">Read a scan</h3>
+            <p class="card-sub">The router recognises the scan type, then the matching expert model returns a diagnosis and the region it read.</p>
+
+            <form id="uploadForm">
+                <label class="form-label" for="patientId">Patient</label>
+                <input type="text" id="patientId" class="form-input" placeholder="Log in to auto-fill" required readonly autocomplete="off">
+                <datalist id="patientOptions"></datalist>
+                <p id="patientIdHint" class="field-hint hidden">Enter the email of the patient this scan belongs to.</p>
+
+                <label class="form-label" for="imageInput">Scan file</label>
+                <input type="file" id="imageInput" class="form-input" accept="image/png, image/jpeg" required>
+                <p class="field-hint">Chest X-ray, brain MRI or bone X-ray. PNG or JPEG.</p>
+
+                <button type="submit" id="analyzeBtn" class="primary-button">Run analysis</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="step">Step two</div>
+            <h3 class="card-title">Log how they feel</h3>
+            <p class="card-sub">Symptoms are read against the most recent scan for this patient, so run the scan first for the fuller picture.</p>
+
+            <form id="symptomForm">
+                <label class="form-label" for="symPatientId">Patient</label>
+                <input type="text" id="symPatientId" class="form-input" placeholder="Log in to auto-fill" required readonly autocomplete="off">
+
+                <label class="form-label" for="painLevel">Pain right now</label>
+                <div class="scale-row">
+                    <input type="range" id="painLevel" min="1" max="10" value="4" required>
+                    <span class="scale-value" id="painValue">4</span>
+                </div>
+                <div class="scale-ends"><span>Barely there</span><span>Unbearable</span></div>
+
+                <label class="form-label" for="primarySymptom">Main symptom</label>
+                <input type="text" id="primarySymptom" class="form-input" placeholder="Chest pain, headache, swelling…" required>
+
+                <label class="form-label" for="symptomProgression">Since last time</label>
+                <select id="symptomProgression" class="form-input">
+                    <option value="Improving">Improving</option>
+                    <option value="Stable" selected>About the same</option>
+                    <option value="Worse">Getting worse</option>
+                </select>
+
+                <button type="submit" id="submitStatusBtn" class="primary-button">Save check-in</button>
+            </form>
+        </div>
+
+    </section>
+
+    <!-- ===================== RESULTS ===================== -->
+    <div id="resultsWrapper" class="hidden">
+
+        <div class="results-head">
+            <h2>Findings</h2>
+            <span>This session</span>
+        </div>
+
+        <section class="grid-container">
+
+            <div id="findingsPanel" class="card hidden">
+                <div class="readings">
+                    <div class="reading-row">
+                        <dt>Routed to</dt>
+                        <dd><span id="organText" class="text-highlight-blue"></span></dd>
+                    </div>
+                    <div class="reading-row">
+                        <dt>Diagnosis</dt>
+                        <dd><span id="conditionText" class="text-highlight-red"></span></dd>
+                    </div>
+                    <div>
+                        <div class="reading-row">
+                            <dt>Confidence</dt>
+                            <dd><span id="confidenceText"></span>%</dd>
+                        </div>
+                        <div class="meter"><i id="confidenceBar"></i></div>
+                    </div>
+                </div>
+
+                <div class="prose-block">
+                    <div class="prose-label">Impression</div>
+                    <p id="impressionText"></p>
+                </div>
+
+                <div class="prose-block">
+                    <div class="prose-label">Triage</div>
+                    <p id="triageText" class="quiet"></p>
+                </div>
+            </div>
+
+            <div id="resultsDashboard" class="viewer hidden">
+                <div class="step">Attention regions</div>
+                <h3 class="card-title">Where the model looked</h3>
+                <p class="card-sub">Boxes are derived from the Grad-CAM activation map for this specific scan.</p>
+
+                <div class="annotated-wrap" id="annotatedWrap">
+                    <img id="annotatedImage" src="" alt="Uploaded scan with model attention regions marked">
+                </div>
+
+                <p class="viewer-note" id="regionNote"></p>
+
+                <div class="image-grid" style="margin-top:16px;">
+                    <div class="img-card">
+                        <h5>Heat overlay</h5>
+                        <img id="heatmapImage" src="" alt="Grad-CAM heat overlay">
+                    </div>
+                    <div class="img-card" id="deltaCard" style="display:none;">
+                        <h5>Change since last</h5>
+                        <img id="deltaImage" src="" alt="Change map versus previous scan">
+                    </div>
+                </div>
+
+                <div class="swatches">
+                    <span><i style="background:#FF5C4D"></i>Progression</span>
+                    <span><i style="background:#35C5F0"></i>Healing</span>
+                </div>
+            </div>
+
+        </section>
+
+        <section>
+            <div id="docsCard" class="docs-card hidden">
+                <div class="docs-head">
+                    <h3>Suggested specialists</h3>
+                    <span class="docs-specialty" id="docsSpecialty"></span>
+                </div>
+                <p class="docs-note" id="docsNote"></p>
+
+                <div class="docs-list" id="docsList"></div>
+
+                <div id="docsGeneralBlock" class="hidden">
+                    <div class="docs-subhead">General physicians</div>
+                    <div class="docs-list" id="docsGeneralList"></div>
+                </div>
+
+                <div id="docsEmpty" class="docs-empty hidden"></div>
+
+                <p class="docs-why" id="docsWhy"></p>
+            </div>
+        </section>
+
+        <section>
+            <div id="planCard" class="plan-card hidden">
+                <div class="plan-header">
+                    <span class="plan-headline" id="planHeadline"></span>
+                    <span class="urgency-chip" id="urgencyChip"></span>
+                </div>
+                <div class="plan-body">
+                    <div class="ctx-strip" id="ctxStrip"></div>
+                    <p class="plan-summary" id="planSummary"></p>
+
+                    <div class="plan-section" id="actionsSection">
+                        <h4>Do now</h4>
+                        <ul class="plan-list" id="actionsList"></ul>
+                    </div>
+
+                    <div class="plan-section" id="otcSection">
+                        <h4>Over-the-counter guidance</h4>
+                        <ul class="plan-list" id="otcList"></ul>
+                    </div>
+
+                    <div class="plan-section" id="monitorSection">
+                        <h4>Watch for over 24-48 hours</h4>
+                        <ul class="plan-list" id="monitorList"></ul>
+                    </div>
+
+                    <div class="plan-section" id="cautionSection">
+                        <h4>Applies to this patient specifically</h4>
+                        <ul class="plan-list caution-list" id="cautionList"></ul>
+                    </div>
+
+                    <div class="plan-section redflag-box" id="redflagSection">
+                        <h4>Go to emergency care if any of these occur</h4>
+                        <ul class="plan-list" id="redflagList"></ul>
+                    </div>
+
+                    <p class="plan-disclaimer" id="planDisclaimer"></p>
+                    <p class="plan-meta" id="planMeta"></p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+</div>
+
+<script>
+    // =========================================
+    // Session: auto-fill patient identity
+    // =========================================
+    (async function initSession() {
+        const headerLabel = document.getElementById('headerUserLabel');
+        const patientIdField = document.getElementById('patientId');
+        const symPatientIdField = document.getElementById('symPatientId');
+        const hint = document.getElementById('patientIdHint');
+
+        let patient = null, doctor = null;
+        try {
+            patient = JSON.parse(localStorage.getItem('loggedInPatient') || 'null');
+            doctor  = JSON.parse(localStorage.getItem('loggedInDoctor')  || 'null');
+        } catch (err) {
+            console.error('Stored session could not be read:', err);
+        }
+
+        if (patient) {
+            const identifier = patient.email;
+            patientIdField.value = identifier;
+            symPatientIdField.value = identifier;
+            headerLabel.innerText = (patient.full_name || identifier) + ' · patient';
+            return;
+        }
+
+        if (doctor) {
+            headerLabel.innerText = (doctor.full_name || doctor.email) + ' · doctor';
+
+            patientIdField.readOnly = false;
+            symPatientIdField.readOnly = false;
+            patientIdField.placeholder = 'Patient email';
+            symPatientIdField.placeholder = 'Patient email';
+            patientIdField.setAttribute('list', 'patientOptions');
+            symPatientIdField.setAttribute('list', 'patientOptions');
+            hint.classList.remove('hidden');
+
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) return;
+
+                const res = await fetch('/api/doctor/requests?status=all', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const data = await res.json();
+                const seen = new Map();
+                data.upcoming.concat(data.past).forEach(a => {
+                    if (a.patient_email && !seen.has(a.patient_email)) {
+                        seen.set(a.patient_email, a.patient_name || a.patient_email);
+                    }
+                });
+
+                if (seen.size === 0) return;
+
+                const dl = document.getElementById('patientOptions');
+                dl.innerHTML = '';
+                seen.forEach((name, email) => {
+                    const opt = document.createElement('option');
+                    opt.value = email;
+                    opt.label = name;
+                    dl.appendChild(opt);
+                });
+                hint.innerText = seen.size === 1
+                    ? '1 patient has booked you. Start typing to pick them.'
+                    : seen.size + ' patients have booked you. Start typing to pick one.';
+            } catch (err) {
+                console.error('Could not load your patient list:', err);
+            }
+            return;
+        }
+
+        headerLabel.innerText = 'Not signed in — taking you to log in…';
+        window.location.href = '/login';
+    })();
+
+    document.getElementById('patientId').addEventListener('input', e => {
+        document.getElementById('symPatientId').value = e.target.value;
+    });
+
+    document.getElementById('painLevel').addEventListener('input', e => {
+        document.getElementById('painValue').innerText = e.target.value;
+    });
+
+    // =========================================
+    // Helpers
+    // =========================================
+    function fillList(ulId, sectionId, items) {
+        const ul = document.getElementById(ulId);
+        const section = document.getElementById(sectionId);
+        ul.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = '';
+        items.forEach(text => {
+            const li = document.createElement('li');
+            li.innerText = text;
+            ul.appendChild(li);
+        });
+    }
+
+    function drawRegions(regions, diagnosis) {
+        const wrap = document.getElementById('annotatedWrap');
+        const note = document.getElementById('regionNote');
+
+        wrap.querySelectorAll('.region-box').forEach(el => el.remove());
+
+        if (!regions || regions.length === 0) {
+            note.innerText = 'No region crossed the activation threshold — '
+                + 'the model\u2019s attention was diffuse rather than focal.';
+            return;
+        }
+
+        const dxUpper = String(diagnosis).toUpperCase();
+        const isNormal = dxUpper.includes('NORMAL');
+        const isUncertain = dxUpper.includes('INCONCLUSIVE');
+
+        regions.forEach(r => {
+            const box = document.createElement('div');
+            box.className = 'region-box'
+                + (isNormal ? ' safe' : '')
+                + (isUncertain ? ' uncertain' : '');
+
+            // Normalized 0-1 coords become percentages, so boxes track the
+            // image at any rendered size without recalculation on resize.
+            box.style.left   = (r.x * 100) + '%';
+            box.style.top    = (r.y * 100) + '%';
+            box.style.width  = (r.w * 100) + '%';
+            box.style.height = (r.h * 100) + '%';
+
+            const tag = document.createElement('span');
+            tag.className = 'region-tag';
+            tag.innerText = r.label + ' (' + Math.round(r.score * 100) + '%)';
+            box.appendChild(tag);
+
+            wrap.appendChild(box);
+        });
+
+        note.innerText = regions.length + ' region'
+            + (regions.length > 1 ? 's' : '')
+            + ' above threshold. These show where the classifier focused — '
+            + 'they are not lesion boundaries, and every box carries the same '
+            + 'label because the model is binary.';
+    }
+
+    async function loadDoctorSuggestions(scanType, diagnosis) {
+        const card = document.getElementById('docsCard');
+        const list = document.getElementById('docsList');
+        const generalBlock = document.getElementById('docsGeneralBlock');
+        const generalList = document.getElementById('docsGeneralList');
+        const empty = document.getElementById('docsEmpty');
+
+        try {
+            const url = '/api/suggest_doctors/' + encodeURIComponent(scanType)
+                + '?diagnosis=' + encodeURIComponent(diagnosis || '');
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+
+            document.getElementById('docsSpecialty').innerText = data.specialty_label || '';
+            document.getElementById('docsNote').innerText = data.note || '';
+            document.getElementById('docsWhy').innerText = data.why || '';
+
+            list.innerHTML = '';
+            generalList.innerHTML = '';
+
+            const renderDoc = (doc, isGeneral) => {
+                // Links straight into the existing booking flow
+                const a = document.createElement('a');
+                a.className = 'doc-row' + (isGeneral ? ' is-general' : '');
+                a.href = '/schedule?doctor=' + encodeURIComponent(doc.doctor_key);
+
+                const avatar = document.createElement('div');
+                avatar.className = 'doc-avatar';
+                avatar.innerText = doc.initials || (doc.full_name || '?').charAt(0).toUpperCase();
+
+                const info = document.createElement('div');
+                info.className = 'doc-info';
+
+                const name = document.createElement('div');
+                name.className = 'doc-name';
+                name.innerText = doc.full_name || 'Unnamed';
+
+                const meta = document.createElement('div');
+                meta.className = 'doc-meta';
+                const bits = [doc.specialty];
+                if (doc.experience) bits.push(doc.experience + ' yrs');
+                meta.innerText = bits.filter(Boolean).join(' · ');
+
+                info.appendChild(name);
+                info.appendChild(meta);
+
+                a.appendChild(avatar);
+                a.appendChild(info);
+
+                if (doc.fee !== null && doc.fee !== undefined) {
+                    const fee = document.createElement('div');
+                    fee.className = 'doc-fee';
+                    fee.innerText = '৳' + Math.round(doc.fee);
+                    a.appendChild(fee);
+                }
+
+                return a;
+            };
+
+            const specialists = data.specialists || [];
+            specialists.forEach(d => list.appendChild(renderDoc(d, false)));
+            list.style.display = specialists.length ? '' : 'none';
+
+            // General physicians shown as a secondary option, and as the
+            // primary one when no specialist matched.
+            const general = data.general || [];
+            if (general.length) {
+                general.forEach(d => generalList.appendChild(renderDoc(d, true)));
+                generalBlock.classList.remove('hidden');
+                document.querySelector('.docs-subhead').innerText =
+                    specialists.length ? 'General physicians' : 'Available instead';
+            } else {
+                generalBlock.classList.add('hidden');
+            }
+
+            if (!specialists.length && !general.length) {
+                empty.innerText = 'No doctors are listed in the directory yet. '
+                    + 'Register a doctor account to populate this list.';
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+            }
+
+            card.classList.remove('hidden');
+        } catch (err) {
+            console.error('Could not load doctor suggestions:', err);
+            card.classList.add('hidden');   // fail quietly rather than showing a broken card
+        }
+    }
+
+    // =========================================
+    // Scan upload
+    // =========================================
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const originalText = analyzeBtn.innerText;
+        analyzeBtn.innerText = "Analyzing scan…";
+        analyzeBtn.disabled = true;
+
+        const fileInput = document.getElementById('imageInput');
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("patient_id", document.getElementById('patientId').value);
+
+        try {
+            const response = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (data.status === "success") {
+                document.getElementById('resultsWrapper').classList.remove('hidden');
+                document.getElementById('resultsDashboard').classList.remove('hidden');
+                document.getElementById('findingsPanel').classList.remove('hidden');
+
+                document.getElementById('organText').innerText = data.scan_type_detected;
+                document.getElementById('confidenceText').innerText = data.confidence;
+                document.getElementById('conditionText').innerText = data.diagnosis;
+                document.getElementById('impressionText').innerText = data.clinical_data.impression;
+                document.getElementById('triageText').innerText = data.clinical_data.triage;
+                document.getElementById('heatmapImage').src = "data:image/jpeg;base64," + data.heatmap;
+
+                // Use the real MIME type -- the upload may have been PNG even
+                // though it is stored server-side with a .jpg extension.
+                const originalMime = data.original_mime || 'image/jpeg';
+                document.getElementById('annotatedImage').src = data.original_image
+                    ? ('data:' + originalMime + ';base64,' + data.original_image)
+                    : ('data:image/jpeg;base64,' + data.heatmap);
+
+                drawRegions(data.regions, data.diagnosis);
+
+                // Match the detected organ to relevant specialists
+                loadDoctorSuggestions(data.scan_type_detected, data.diagnosis);
+
+                document.getElementById('confidenceBar').style.width = data.confidence + '%';
+                const dx = document.getElementById('conditionText');
+                const normal = String(data.diagnosis).toUpperCase().includes('NORMAL');
+                dx.classList.toggle('text-highlight-red', !normal);
+                dx.style.color = normal ? 'var(--safe)' : '';
+
+                document.getElementById('symPatientId').value =
+                    document.getElementById('patientId').value;
+
+                if (data.has_historical_timeline) {
+                    document.getElementById('deltaCard').style.display = 'block';
+                    document.getElementById('deltaImage').src =
+                        "data:image/jpeg;base64," + data.delta_heatmap;
+                } else {
+                    document.getElementById('deltaCard').style.display = 'none';
+                }
+
+                document.getElementById('resultsWrapper')
+                    .scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                alert("Error: " + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Analysis failed. Check console.");
+        } finally {
+            analyzeBtn.innerText = originalText;
+            analyzeBtn.disabled = false;
+        }
+    });
+
+    // =========================================
+    // Symptom check-in
+    // =========================================
+    document.getElementById('symptomForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitStatusBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Building care plan…";
+        submitBtn.disabled = true;
+
+        const payload = {
+            patient_id: document.getElementById('symPatientId').value,
+            pain_level: parseInt(document.getElementById('painLevel').value),
+            primary_symptom: document.getElementById('primarySymptom').value,
+            symptom_progression: document.getElementById('symptomProgression').value
+        };
+
+        try {
+            const response = await fetch('/patient/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+                const plan = data.clinical_plan;
+                document.getElementById('resultsWrapper').classList.remove('hidden');
+
+                // If the backend still returns the OLD text-only shape (i.e.
+                // app.py's /patient/update-status hasn't been updated yet),
+                // render that text in the card rather than throwing it in a
+                // popup. Degrades gracefully instead of breaking the page.
+                if (!plan) {
+                    const card = document.getElementById('planCard');
+                    card.classList.remove('hidden',
+                        'urgency-URGENT', 'urgency-PROMPT', 'urgency-ROUTINE');
+                    card.classList.add('urgency-ROUTINE');
+
+                    document.getElementById('planHeadline').innerText = 'Care plan';
+                    const legacyChip = document.getElementById('urgencyChip');
+                    legacyChip.className = 'urgency-chip chip-ROUTINE';
+                    legacyChip.innerText = 'Guidance';
+
+                    const legacyStrip = document.getElementById('ctxStrip');
+                    legacyStrip.innerHTML = '';
+                    if (data.correlated_scan_context) {
+                        const el = document.createElement('span');
+                        el.className = 'ctx-pill';
+                        el.innerHTML = 'Scan <b></b>';
+                        el.querySelector('b').innerText = data.correlated_scan_context;
+                        legacyStrip.appendChild(el);
+                        legacyStrip.style.display = '';
+                    } else {
+                        legacyStrip.style.display = 'none';
+                    }
+
+                    document.getElementById('planSummary').innerText =
+                        data.patient_suggestions || 'No guidance returned.';
+
+                    ['actionsSection', 'otcSection', 'monitorSection',
+                     'cautionSection', 'redflagSection'].forEach(id => {
+                        document.getElementById(id).style.display = 'none';
+                    });
+
+                    document.getElementById('planDisclaimer').innerText =
+                        'This is an automated research prototype, not a diagnosis. '
+                        + 'Consult a qualified clinician.';
+                    document.getElementById('planMeta').innerText =
+                        'Legacy response format — update /patient/update-status in '
+                        + 'app.py to get the full structured plan.';
+
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const card = document.getElementById('planCard');
+                card.classList.remove('hidden',
+                    'urgency-URGENT', 'urgency-PROMPT', 'urgency-ROUTINE');
+                card.classList.add('urgency-' + plan.urgency);
+
+                document.getElementById('planHeadline').innerText = plan.headline || 'Clinical guidance';
+
+                const chip = document.getElementById('urgencyChip');
+                chip.className = 'urgency-chip chip-' + plan.urgency;
+                chip.innerText = {
+                    URGENT:  'See someone today',
+                    PROMPT:  'Within 24-48 hours',
+                    ROUTINE: 'Self-care'
+                }[plan.urgency] || plan.urgency;
+
+                const ctx = plan.patient_context || {};
+                const strip = document.getElementById('ctxStrip');
+                strip.innerHTML = '';
+                const pills = [];
+                if (ctx.age !== null && ctx.age !== undefined) pills.push(['Age', ctx.age]);
+                if (ctx.gender)            pills.push(['Sex', ctx.gender]);
+                if (ctx.weight_kg !== null && ctx.weight_kg !== undefined)
+                    pills.push(['Weight', ctx.weight_kg + ' kg']);
+                if (ctx.known_problem)     pills.push(['History', ctx.known_problem]);
+                if (data.correlated_scan_context)
+                    pills.push(['Scan', data.correlated_scan_context]);
+
+                pills.forEach(([k, v]) => {
+                    const el = document.createElement('span');
+                    el.className = 'ctx-pill';
+                    el.innerHTML = k + ' <b></b>';
+                    el.querySelector('b').innerText = v;   // avoid HTML injection
+                    strip.appendChild(el);
+                });
+                strip.style.display = pills.length ? '' : 'none';
+
+                document.getElementById('planSummary').innerText = plan.summary || '';
+
+                fillList('actionsList',  'actionsSection', plan.immediate_actions);
+                fillList('otcList',      'otcSection',     plan.otc_guidance);
+                fillList('monitorList',  'monitorSection', plan.monitoring);
+                fillList('cautionList',  'cautionSection', plan.cautions);
+                fillList('redflagList',  'redflagSection', plan.red_flags);
+
+                document.getElementById('planDisclaimer').innerText = plan.disclaimer || '';
+                document.getElementById('planMeta').innerText =
+                    'Generated ' + (plan.generated_at || '')
+                    + (plan.llm_available === false ? ' · offline fallback guidance' : '');
+
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to generate care plan.");
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

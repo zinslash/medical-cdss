@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In - AI Triage</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Kept your font links, but streamlined the CSS to use Inter for a cleaner, professional SaaS look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Clean, professional clinical palette */
+            --ink: #0F172A;
+            --ink-light: #334155;
+            --muted: #64748B;
+            --muted-soft: #94A3B8;
+
+            --paper: #F8FAFC;
+            --card: #FFFFFF;
+            --line: #E2E8F0;
+            --field-bg: #FFFFFF;
+            --field-border: #CBD5E1;
+
+            --brand: #0284C7; /* Trustworthy medical blue */
+            --brand-hover: #0369A1;
+            --brand-soft: #E0F2FE;
+
+            --triage-low: #10B981;
+            --triage-mid: #F59E0B;
+            --triage-high: #EF4444;
+
+            --panel-bg: #0B1120;
+            --panel-grad: linear-gradient(145deg, #0F172A 0%, #1E293B 100%);
+
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: var(--paper);
+            color: var(--ink);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: minmax(0, 42%) minmax(0, 58%);
+        }
+
+        /* ============= BRAND / SIGNATURE PANEL ============= */
+        .brand-panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 48px;
+            background: var(--panel-grad);
+            color: #F8FAFC;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Subtle architectural pattern instead of glowing dots */
+        .brand-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 64px 64px;
+            pointer-events: none;
+        }
+
+        .brand-mark {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-mark .mark {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--brand);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(2, 132, 199, 0.3);
+        }
+
+        .brand-mark .mark svg { width: 16px; height: 16px; }
+
+        .brand-mark .name {
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-copy {
+            position: relative;
+            z-index: 1;
+            margin-top: 40px;
+        }
+
+        /* Clean, professional status pill instead of neon radar */
+        .eyebrow {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #94A3B8;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: rgba(255,255,255,0.06);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .eyebrow .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--triage-low);
+        }
+
+        .brand-copy h2 {
+            font-weight: 600;
+            font-size: 36px;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            max-width: 400px;
+        }
+
+        .brand-copy p {
+            margin-top: 16px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #94A3B8;
+            max-width: 380px;
+        }
+
+        /* Minimalist decorative separator instead of ECG animation */
+        .separator {
+            width: 40px;
+            height: 2px;
+            background: var(--brand);
+            margin: 40px 0 32px;
+            border-radius: 2px;
+        }
+
+        /* Triage legend — clean data key */
+        .triage-legend {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: 24px;
+            font-size: 13px;
+            color: #CBD5E1;
+            font-weight: 500;
+        }
+
+        .triage-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .triage-legend i {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .triage-legend i.low  { background: var(--triage-low); }
+        .triage-legend i.mid  { background: var(--triage-mid); }
+        .triage-legend i.high { background: var(--triage-high); }
+
+        .brand-foot {
+            position: relative;
+            z-index: 1;
+            font-size: 13px;
+            color: #64748B;
+            line-height: 1.6;
+            max-width: 360px;
+        }
+
+        /* ============= FORM PANEL ============= */
+        .form-panel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 32px;
+            background: var(--card);
+        }
+
+        .form-shell {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .mobile-brand {
+            display: none;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            font-size: 14px;
+            color: var(--muted);
+            font-weight: 500;
+            text-decoration: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .back-button:hover { color: var(--ink); }
+        .back-button svg { width: 16px; height: 16px; }
+
+        .header-container {
+            margin-bottom: 32px;
+        }
+
+        .greeting {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--ink-light);
+            margin-bottom: 8px;
+        }
+
+        /* Polished Segmented Control */
+        .toggle-row {
+            display: flex;
+            flex-direction: row;
+            background: var(--paper);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--line);
+            margin-bottom: 24px;
+        }
+
+        .toggle-button {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background-color: transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-button:hover:not(.active) {
+            color: var(--ink);
+        }
+
+        .toggle-button.active {
+            background-color: var(--card);
+            color: var(--ink);
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Clean Inputs */
+        .input-field {
+            background-color: var(--field-bg);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 14px;
+            color: var(--ink);
+            border: 1px solid var(--field-border);
+            margin-bottom: 20px;
+            outline: none;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-field::placeholder { color: var(--muted-soft); }
+
+        .input-field:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-soft);
+        }
+
+        .password-container {
+            display: flex;
+            align-items: center;
+            background-color: var(--field-bg);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--field-border);
+            padding: 0 8px 0 14px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .password-container:focus-within {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-soft);
+        }
+
+        .password-input {
+            flex: 1;
+            padding: 12px 0;
+            font-size: 14px;
+            color: var(--ink);
+            background: transparent;
+            border: none;
+            outline: none;
+            min-width: 0;
+        }
+
+        .password-input::placeholder { color: var(--muted-soft); }
+
+        .eye-button {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .eye-button:hover {
+            background-color: var(--paper);
+            color: var(--ink);
+        }
+
+        .button-container {
+            margin-top: 8px;
+        }
+
+        /* Standard SaaS Primary Button */
+        .login-button {
+            width: 100%;
+            background-color: var(--brand);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: background-color 0.2s ease;
+        }
+
+        .login-button:hover {
+            background-color: var(--brand-hover);
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .link-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: -8px;
+            margin-bottom: 24px;
+        }
+
+        .signup-bold, .link-action {
+            color: var(--brand);
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        .signup-bold:hover, .link-action:hover { color: var(--brand-hover); text-decoration: underline; }
+
+        .signup-container {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .signup-text {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ============= RESPONSIVE ============= */
+        @media (max-width: 900px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+            .brand-panel {
+                display: none;
+            }
+            .form-panel { background: var(--paper); }
+            .mobile-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 32px;
+            }
+            .mobile-brand .mark {
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                background: var(--brand);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .mobile-brand .mark svg { width: 14px; height: 14px; }
+            .mobile-brand .name {
+                font-weight: 600;
+                font-size: 16px;
+                color: var(--ink);
+                letter-spacing: -0.01em;
+            }
+            .form-panel { padding: 40px 24px; }
+        }
+
+        @media (max-width: 420px) {
+            .greeting { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+
+        <!-- ================= SIGNATURE BRAND PANEL ================= -->
+        <aside class="brand-panel">
+            <div class="brand-mark">
+                <div class="mark">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 12H7L9.5 5L14.5 19L17 12H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <span class="name">AI Triage</span>
+            </div>
+
+            <div class="brand-copy">
+                <div class="eyebrow"><span class="dot"></span>System Active</div>
+                <h2>Every symptom, read the moment it matters.</h2>
+                <p>Sign in to route cases, review flagged patients, and keep response times short — for every severity level.</p>
+
+                <!-- Minimal separator replaces the glowing ECG -->
+                <div class="separator"></div>
+
+                <div class="triage-legend">
+                    <span><i class="low"></i>Routine</span>
+                    <span><i class="mid"></i>Elevated</span>
+                    <span><i class="high"></i>Critical</span>
+                </div>
+            </div>
+
+            <p class="brand-foot">Trusted by clinical teams to pre-screen and prioritize patient intake with AI-assisted review.</p>
+        </aside>
+
+        <!-- ================= FORM PANEL ================= -->
+        <main class="form-panel">
+            <div class="form-shell">
+
+                <div class="mobile-brand">
+                    <div class="mark">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12H7L9.5 5L14.5 19L17 12H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span class="name">AI Triage</span>
+                </div>
+
+                <a href="/index" class="back-button">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Back
+                </a>
+
+                <!-- ================= LOGIN VIEW ================= -->
+                <div id="loginView">
+                    <div class="header-container">
+                        <h1 class="greeting">Welcome back</h1>
+                        <p class="subtitle">Please enter your details to sign in.</p>
+                    </div>
+
+                    <label class="label">Log in as</label>
+                    <div class="toggle-row" id="loginRoleToggle">
+                        <button type="button" class="toggle-button active" data-role="patient">Patient</button>
+                        <button type="button" class="toggle-button" data-role="doctor">Clinician</button>
+                    </div>
+
+                    <form id="loginForm" class="form-container">
+                        <label class="label" for="email">Email</label>
+                        <input type="email" id="email" class="input-field" placeholder="name@example.com" required>
+
+                        <label class="label" for="password">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="password" class="password-input" placeholder="••••••••" required>
+                            <button type="button" id="togglePassword" class="eye-button">Show</button>
+                        </div>
+
+                        <div class="link-row">
+                            <button type="button" class="link-action" id="showForgotBtn">Forgot password?</button>
+                        </div>
+
+                        <div class="button-container">
+                            <button type="submit" id="loginBtn" class="login-button">Sign in</button>
+
+                            <div class="signup-container">
+                                <p class="signup-text">Don't have an account? <a href="/signup" class="signup-bold">Sign up</a></p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+
+                <!-- ================= FORGOT / RESET PASSWORD VIEW ================= -->
+                <div id="forgotView" class="hidden">
+                    <div class="header-container">
+                        <h1 class="greeting">Reset password</h1>
+                        <p class="subtitle">Enter your email and a new password below.</p>
+                    </div>
+
+                    <form id="forgotForm" class="form-container">
+                        <label class="label" for="forgotEmail">Email address</label>
+                        <input type="email" id="forgotEmail" class="input-field" placeholder="name@example.com" required>
+
+                        <label class="label" for="newPassword">New password</label>
+                        <div class="password-container">
+                            <input type="password" id="newPassword" class="password-input" placeholder="••••••••" required>
+                            <button type="button" id="toggleForgotPass" class="eye-button">Show</button>
+                        </div>
+
+                        <label class="label" for="confirmPassword">Confirm new password</label>
+                        <div class="password-container">
+                            <input type="password" id="confirmPassword" class="password-input" placeholder="••••••••" required>
+                            <button type="button" id="toggleConfirmPass" class="eye-button">Show</button>
+                        </div>
+
+                        <div class="button-container">
+                            <button type="submit" id="resetBtn" class="login-button">Update password</button>
+
+                            <div class="signup-container">
+                                <button type="button" class="link-action" id="backToLoginBtn">← Back to log in</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+<script>
+    let loginRole = 'patient';
+
+    const loginView = document.getElementById('loginView');
+    const forgotView = document.getElementById('forgotView');
+
+    // Toggle between Login and Forgot views
+    document.getElementById('showForgotBtn').addEventListener('click', () => {
+        loginView.classList.add('hidden');
+        forgotView.classList.remove('hidden');
+    });
+
+    document.getElementById('backToLoginBtn').addEventListener('click', () => {
+        forgotView.classList.add('hidden');
+        loginView.classList.remove('hidden');
+    });
+
+    // Role Toggle Logic
+    const roleButtons = document.querySelectorAll('.toggle-button');
+    roleButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            roleButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loginRole = btn.getAttribute('data-role');
+        });
+    });
+
+    // Password Visibility Logic (Login Page)
+    const passwordInput = document.getElementById('password');
+    const togglePasswordBtn = document.getElementById('togglePassword');
+
+    togglePasswordBtn.addEventListener('click', function () {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.textContent = type === 'password' ? 'Show' : 'Hide';
+    });
+
+    // Password Visibility Logic (Forgot Password Page)
+    const newPasswordInput = document.getElementById('newPassword');
+    const toggleForgotPass = document.getElementById('toggleForgotPass');
+
+    toggleForgotPass.addEventListener('click', function () {
+        const type = newPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        newPasswordInput.setAttribute('type', type);
+        this.textContent = type === 'password' ? 'Show' : 'Hide';
+    });
+
+    // Password Visibility Logic (Repeat New Password)
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const toggleConfirmPass = document.getElementById('toggleConfirmPass');
+
+    toggleConfirmPass.addEventListener('click', function () {
+        const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmPasswordInput.setAttribute('type', type);
+        this.textContent = type === 'password' ? 'Show' : 'Hide';
+    });
+
+    // Form Submission Logic: Login
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const loginBtn = document.getElementById('loginBtn');
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        const endpoint = loginRole === 'doctor'
+            ? '/api/login_doctor'
+            : '/api/login_patient';
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                // Required by the booking and payment endpoints, which send it
+                // back as an Authorization: Bearer header.
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                }
+
+                if (loginRole === 'doctor') {
+                    localStorage.setItem('loggedInDoctor', JSON.stringify(data.doctor));
+                    window.location.href = '/doctor';
+                } else {
+                    localStorage.setItem('loggedInPatient', JSON.stringify(data.patient));
+                    window.location.href = '/patient';
+                }
+            } else {
+                alert(data.detail || 'Login failed. Please check your credentials.');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign in';
+            }
+        } catch (error) {
+            console.error('Login Error:', error);
+            alert('Network error. Ensure your FastAPI backend is running.');
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign in';
+        }
+    });
+
+    // Form Submission Logic: Forgot Password Reset
+    document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const resetBtn = document.getElementById('resetBtn');
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Updating...';
+
+        const email = document.getElementById('forgotEmail').value.trim();
+        const new_password = document.getElementById('newPassword').value;
+        const confirm_password = document.getElementById('confirmPassword').value;
+
+        if (new_password.length < 8) {
+            alert('Password must be at least 8 characters.');
+            resetBtn.disabled = false;
+            resetBtn.textContent = 'Update password';
+            return;
+        }
+
+        if (new_password !== confirm_password) {
+            alert('The two passwords do not match.');
+            resetBtn.disabled = false;
+            resetBtn.textContent = 'Update password';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/reset_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, new_password: new_password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                alert('Password updated successfully! Please log in.');
+                document.getElementById('forgotEmail').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                document.getElementById('email').value = email;
+                forgotView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Update password';
+            } else {
+                alert(data.detail || 'Failed to update password.');
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Update password';
+            }
+        } catch (error) {
+            console.error('Reset Error:', error);
+            alert('Network error. Ensure your FastAPI backend is running.');
+            resetBtn.disabled = false;
+            resetBtn.textContent = 'Update password';
+        }
+    });
+</script>
+</body>
+</html>

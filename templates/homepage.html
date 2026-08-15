@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Triage - App</title>
+
+    <style>
+        /* =========================================
+           GLOBAL STYLES
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f0f0; /* Gray background outside the app wrapper */
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px; /* Constrains width to look like a mobile phone on desktop */
+            background-color: #FFFFFF;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* Screen Visibility Toggle */
+        .screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* =========================================
+           SHARED COMPONENTS
+           ========================================= */
+        .primary-button {
+            background-color: #1E60FF;
+            border: none;
+            border-radius: 28px;
+            padding: 16px;
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0px 4px 8px rgba(30, 96, 255, 0.25);
+            text-align: center;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .primary-button:hover { opacity: 0.9; }
+
+        .link-container {
+            margin-top: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .link-text { font-size: 14px; color: #6B7280; }
+        .link-bold { color: #1E60FF; font-weight: bold; }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: #F3F4F6;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 15px;
+            color: #1F2937;
+            border: 1px solid #E5E7EB;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .form-input:focus, .password-container:focus-within {
+            border-color: #1E60FF;
+        }
+
+        .password-container {
+            display: flex;
+            align-items: center;
+            background-color: #F3F4F6;
+            border-radius: 12px;
+            border: 1px solid #E5E7EB;
+            padding: 0 16px;
+            margin-bottom: 16px;
+        }
+
+        .password-input {
+            flex: 1;
+            padding: 14px 0;
+            font-size: 15px;
+            color: #1F2937;
+            background: transparent;
+            border: none;
+            outline: none;
+        }
+
+        .eye-button {
+            background: none;
+            border: none;
+            color: #1E60FF;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding-left: 10px;
+        }
+
+        /* =========================================
+           1. FIRST SCREEN (LANDING)
+           ========================================= */
+        #screen-first {
+            background-color: #1E60FF;
+            justify-content: space-between;
+            align-items: center;
+            padding: 60px 30px;
+        }
+
+        .logo-container { margin-top: 100px; text-align: center; }
+        .logo-title { font-size: 34px; font-weight: bold; color: #FFFFFF; letter-spacing: 2px; }
+        .logo-subtitle { font-size: 12px; color: #D1E0FF; letter-spacing: 3px; margin-top: 8px; font-weight: 600; }
+
+        .first-btn-container { width: 100%; margin-bottom: 20px; }
+
+        .landing-login-btn {
+            background-color: #FFFFFF;
+            color: #1E60FF;
+            border: none;
+            border-radius: 28px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 16px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .outline-button {
+            background-color: transparent;
+            border: 1.5px solid #FFFFFF;
+            padding: 16px;
+            border-radius: 30px;
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* =========================================
+           2. LOGIN & 3. SIGN UP SCREENS
+           ========================================= */
+        .auth-container { padding: 40px 28px; justify-content: center; flex: 1; }
+
+        .header-container { margin-bottom: 32px; }
+        .heading { font-size: 32px; font-weight: bold; color: #1E60FF; margin-bottom: 6px; }
+        .subheading { font-size: 16px; color: #6B7280; }
+
+        .back-header { display: flex; align-items: center; margin-bottom: 30px; margin-top: 10px; }
+        .back-arrow { font-size: 24px; color: #1E60FF; font-weight: bold; padding-right: 15px; cursor: pointer; border: none; background: none; }
+        .heading-small { font-size: 22px; font-weight: bold; color: #1E60FF; }
+
+        /* =========================================
+           4. HOME SCREEN (NEW DESIGN)
+           ========================================= */
+        .home-header {
+            width: 100%;
+            height: 200px;
+            background-color: #2673ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .home-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            text-align: center;
+        }
+
+        .profile-icon {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .profile-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .home-body {
+            flex: 1;
+            background-color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 40px; /* Space between the buttons */
+            padding: 20px;
+        }
+
+        .home-action-btn {
+            background-color: #FFFFFF;
+            border: 2px solid #00aaff; /* Light blue border */
+            color: #222222;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 30px; /* Pill shape */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .home-action-btn:hover {
+            background-color: #f0f8ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 170, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- =========================================
+             1. FIRST SCREEN (LANDING)
+             ========================================= -->
+        <section id="screen-first" class="screen">
+            <div class="logo-container">
+                <h1 class="logo-title">AI TRIAGE</h1>
+                <h2 class="logo-subtitle">MEDICAL ASSISTANT</h2>
+            </div>
+
+            <div class="first-btn-container">
+                <button class="landing-login-btn" onclick="navigateTo('screen-login')">Log In</button>
+                <button class="outline-button" onclick="navigateTo('screen-signup')">Sign Up</button>
+            </div>
+        </section>
+
+
+        <!-- =========================================
+             2. LOGIN SCREEN
+             ========================================= -->
+        <section id="screen-login" class="screen">
+            <div class="auth-container">
+                <div class="header-container">
+                    <h1 class="heading">Hello!</h1>
+                    <p class="subheading">Welcome, To The Sign In Page!</p>
+                </div>
+
+                <form onsubmit="handleLogin(event)">
+                    <label class="form-label">Email or Mobile Number</label>
+                    <input type="text" class="form-input" placeholder="Enter email or mobile number" required>
+
+                    <label class="form-label">Password</label>
+                    <div class="password-container">
+                        <input type="password" id="login-password" class="password-input" placeholder="Enter password" required>
+                        <button type="button" class="eye-button" onclick="togglePassword('login-password', this)">Show</button>
+                    </div>
+
+                    <button type="submit" class="primary-button" style="margin-top: 10px;">Log In</button>
+
+                    <div class="link-container" onclick="navigateTo('screen-signup')">
+                        <span class="link-text">Don't have an account? <span class="link-bold">Sign Up</span></span>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+
+        <!-- =========================================
+             3. SIGN UP SCREEN
+             ========================================= -->
+        <section id="screen-signup" class="screen">
+            <div class="auth-container" style="padding-top: 20px;">
+                <div class="back-header">
+                    <button class="back-arrow" onclick="navigateTo('screen-first')">&lt;</button>
+                    <h2 class="heading-small">Sign Up Account</h2>
+                </div>
+
+                <form onsubmit="handleSignUp(event)">
+                    <label class="form-label">Full name</label>
+                    <input type="text" class="form-input" placeholder="Enter full name" required>
+
+                    <label class="form-label">Password</label>
+                    <div class="password-container">
+                        <input type="password" id="signup-password" class="password-input" placeholder="Enter password" required>
+                        <button type="button" class="eye-button" onclick="togglePassword('signup-password', this)">Show</button>
+                    </div>
+
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" placeholder="Enter email" required>
+
+                    <label class="form-label">Mobile Number</label>
+                    <input type="tel" class="form-input" placeholder="Enter mobile number" required>
+
+                    <label class="form-label">Date Of Birth</label>
+                    <input type="text" class="form-input" placeholder="DD/MM/YYYY" required>
+
+                    <button type="submit" class="primary-button" style="margin-top: 20px;">Sign Up</button>
+
+                    <div class="link-container" onclick="navigateTo('screen-login')">
+                        <span class="link-text">Already have an account? <span class="link-bold">Log In</span></span>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+
+        <!-- =========================================
+             4. HOME SCREEN (NEW DESIGN)
+             ========================================= -->
+        <section id="screen-home" class="screen active">
+            <!-- Header -->
+            <div class="home-header">
+                <h2 class="home-title">Welcome To The Home Page!</h2>
+
+                <!-- Profile Icon (Bottom Right) -->
+                <button class="profile-icon" onclick="goToProfile()" title="Go to Profile">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body Buttons -->
+            <div class="home-body">
+                <!-- Routes directly to your triage engine -->
+                <button class="home-action-btn" onclick="window.location.href='/triage'">
+                    Upload an X-ray
+                </button>
+
+                <button class="home-action-btn" onclick="alert('Payment functionality to be added soon!')">
+                    Pay for an Urgent Appointment
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- =========================================
+         JAVASCRIPT ROUTING & LOGIC
+         ========================================= -->
+    <script>
+        // Router Function: Hides all screens and shows the requested one
+        function navigateTo(screenId) {
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Password Visibility Toggle Function
+        function togglePassword(inputId, btnElement) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                btnElement.textContent = "Hide";
+            } else {
+                input.type = "password";
+                btnElement.textContent = "Show";
+            }
+        }
+
+        // Mock Login Handler (Routes to Home Screen)
+        function handleLogin(event) {
+            event.preventDefault();
+            navigateTo('screen-home');
+        }
+
+        // Mock Sign Up Handler (Routes to Home Screen)
+        function handleSignUp(event) {
+            event.preventDefault();
+            navigateTo('screen-home');
+        }
+
+        // Route to the correct profile based on active login session
+        function goToProfile() {
+            if (localStorage.getItem('loggedInDoctor')) {
+                window.location.href = '/doctor';
+            } else if (localStorage.getItem('loggedInPatient')) {
+                window.location.href = '/patient';
+            } else {
+                // If they aren't logged in, send them to the login screen
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>

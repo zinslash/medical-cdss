@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Requests - AI Triage</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #2673ff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .back-btn:hover { color: #003cc2; }
+
+        .page-title { color: #2673ff; font-size: 22px; font-weight: 700; }
+
+        .doctor-label { font-size: 14px; color: #64748b; margin-top: 2px; }
+
+        .icon-transparent {
+            background: none; color: #2673ff; font-size: 26px;
+            cursor: pointer; border: none;
+        }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 24px; }
+
+        .tab {
+            padding: 9px 20px;
+            border-radius: 20px;
+            border: 1px solid #cad6ff;
+            background: #fff;
+            color: #2673ff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .tab.active { background: #2673ff; border-color: #2673ff; color: #fff; }
+
+        /* Summary strip */
+        .summary {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            flex: 1;
+            min-width: 150px;
+            background: #ccd9fc;
+            border-radius: 14px;
+            padding: 16px 18px;
+        }
+
+        .stat-value { font-size: 24px; font-weight: 700; color: #2673ff; }
+        .stat-label { font-size: 13px; color: #334155; margin-top: 2px; }
+
+        /* Booking cards */
+        .booking {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            background: #f8fafc;
+        }
+
+        .booking-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .patient-row { display: flex; align-items: center; gap: 12px; }
+
+        .patient-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: #00d2c4; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 15px; flex-shrink: 0;
+        }
+
+        .patient-name { font-size: 16px; font-weight: 700; color: #1e293b; }
+        .patient-meta { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+        .when {
+            text-align: right;
+            font-size: 14px;
+            font-weight: 700;
+            color: #2673ff;
+            white-space: nowrap;
+        }
+
+        .when small { display: block; font-weight: 500; color: #64748b; font-size: 12px; }
+
+        .problem {
+            margin-top: 14px;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .problem-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            margin-bottom: 4px;
+        }
+
+        .pay-row {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .tag {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 11px;
+            border-radius: 12px;
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .tag.paid { background: #dcfce7; color: #15803d; }
+        .tag.unpaid { background: #fef3c7; color: #92400e; }
+        .tag.ref { font-family: ui-monospace, Menlo, monospace; }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-icon { font-size: 44px; margin-bottom: 12px; }
+        .empty h3 { font-size: 17px; color: #334155; margin-bottom: 6px; }
+        .empty p { font-size: 14px; line-height: 1.6; }
+
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.location.href='/doctor'">❮</button>
+                <div>
+                    <div class="page-title">Booking Requests</div>
+                    <div class="doctor-label" id="doctorLabel">Loading…</div>
+                </div>
+            </div>
+            <button id="logoutBtn" class="icon-transparent" title="Log Out">🏠</button>
+        </div>
+
+        <div class="summary" id="summary" style="display:none;">
+            <div class="stat">
+                <div class="stat-value" id="statUpcoming">0</div>
+                <div class="stat-label">Upcoming consultations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="statEarnings">TK 0</div>
+                <div class="stat-label">Confirmed earnings</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="statPast">0</div>
+                <div class="stat-label">Past consultations</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-view="upcoming">Upcoming</button>
+            <button class="tab" data-view="past">Past</button>
+        </div>
+
+        <div id="list">
+            <div class="empty"><div class="empty-icon">⏳</div><h3>Loading your bookings…</h3></div>
+        </div>
+
+    </div>
+
+    <script>
+        let payload = null;
+        let view = 'upcoming';
+
+        function logout() {
+            localStorage.removeItem('loggedInDoctor');
+            localStorage.removeItem('loggedInPatient');
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        }
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        document.querySelectorAll('.tab').forEach(t => {
+            t.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                t.classList.add('active');
+                view = t.dataset.view;
+                render();
+            });
+        });
+
+        function initials(name) {
+            return (name || '?').trim().split(/\s+/)
+                .map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
+        }
+
+        function prettyDate(iso) {
+            const d = new Date(iso + 'T00:00:00');
+            if (isNaN(d)) return iso;
+            return d.toLocaleDateString(undefined,
+                { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g,
+                c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        async function load() {
+            const token = localStorage.getItem('authToken');
+            if (!token) { window.location.replace('/login'); return; }
+
+            try {
+                // Only paid bookings come back. An appointment stays at
+                // awaiting_payment until the gateway confirms the money.
+                const res = await fetch('/api/doctor/requests?status=confirmed', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.status === 401) { logout(); return; }
+                if (res.status === 403) {
+                    document.getElementById('list').innerHTML =
+                        '<div class="error-box">This page is for doctor accounts. ' +
+                        'You are signed in as a patient.</div>';
+                    return;
+                }
+                if (!res.ok) throw new Error('failed');
+
+                payload = await res.json();
+                document.getElementById('doctorLabel').textContent = payload.doctor.full_name;
+
+                const earnings = payload.upcoming.concat(payload.past)
+                    .filter(a => a.paid)
+                    .reduce((sum, a) => sum + Number(a.fee), 0);
+
+                document.getElementById('statUpcoming').textContent = payload.counts.upcoming;
+                document.getElementById('statPast').textContent = payload.counts.past;
+                document.getElementById('statEarnings').textContent = 'TK ' + earnings.toFixed(0);
+                document.getElementById('summary').style.display = 'flex';
+
+                render();
+            } catch (e) {
+                document.getElementById('list').innerHTML =
+                    '<div class="error-box">Could not load your bookings. ' +
+                    'Check the server is running, then refresh.</div>';
+            }
+        }
+
+        function render() {
+            const list = document.getElementById('list');
+            const items = view === 'upcoming' ? payload.upcoming : payload.past;
+
+            if (!items.length) {
+                list.innerHTML = view === 'upcoming'
+                    ? `<div class="empty">
+                         <div class="empty-icon">📭</div>
+                         <h3>No upcoming bookings</h3>
+                         <p>Confirmed bookings appear here once a patient has paid.<br>
+                            Unpaid bookings are not shown.</p>
+                       </div>`
+                    : `<div class="empty">
+                         <div class="empty-icon">🗂️</div>
+                         <h3>No past consultations</h3>
+                         <p>Completed appointments will be listed here.</p>
+                       </div>`;
+                return;
+            }
+
+            list.innerHTML = items.map(a => {
+                const age = a.patient_age ? a.patient_age + ' yrs' : '';
+                const gender = a.patient_gender || '';
+                const forWhom = a.patient_type && a.patient_type !== 'Yourself'
+                    ? ' · booked for another person' : '';
+                const meta = [age, gender].filter(Boolean).join(' · ') + forWhom;
+
+                return `
+                <div class="booking">
+                    <div class="booking-top">
+                        <div class="patient-row">
+                            <div class="patient-avatar">${escapeHtml(initials(a.patient_name))}</div>
+                            <div>
+                                <div class="patient-name">${escapeHtml(a.patient_name || 'Unnamed patient')}</div>
+                                <div class="patient-meta">${escapeHtml(meta || a.patient_email)}</div>
+                            </div>
+                        </div>
+                        <div class="when">
+                            ${escapeHtml(a.appt_time)}
+                            <small>${escapeHtml(prettyDate(a.appt_date))}</small>
+                        </div>
+                    </div>
+
+                    ${a.problem ? `
+                    <div class="problem">
+                        <div class="problem-label">Reported problem</div>
+                        ${escapeHtml(a.problem)}
+                    </div>` : ''}
+
+                    <div class="pay-row">
+                        <span class="tag ${a.paid ? 'paid' : 'unpaid'}">
+                            ${a.paid ? '✓ Paid TK ' + Number(a.fee).toFixed(0) : 'Payment pending'}
+                        </span>
+                        ${a.method ? `<span class="tag">${escapeHtml(a.method)}</span>` : ''}
+                        ${a.order_id ? `<span class="tag ref">${escapeHtml(a.order_id)}</span>` : ''}
+                        <span class="tag">${escapeHtml(a.patient_email)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        load();
+    </script>
+</body>
+</html>

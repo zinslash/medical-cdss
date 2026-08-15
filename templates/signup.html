@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - AI Triage</title>
+
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Matched perfectly to patient.html Clinical SaaS Palette */
+            --bg-color: #F4F7FB;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+
+            --primary: #0284C7;
+            --primary-hover: #0369A1;
+            --primary-light: #E0F2FE;
+
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Allows scrolling if screen is short */
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+
+            /* BEAUTIFUL AMBIENT MESH BACKGROUND */
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(2, 132, 199, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
+            background-size: 100% 100%;
+        }
+
+        /* Subtle grid overlay to give it a structured, medical feel */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(2, 132, 199, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(2, 132, 199, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        .back-button {
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .back-button:hover { color: var(--text-main); }
+        .back-button svg { width: 16px; height: 16px; }
+
+        /* ---- Card shell ---- */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: var(--radius-lg);
+            padding: 40px 32px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-container {
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .clinic-mark {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .clinic-mark .mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clinic-mark .mark svg { width: 14px; height: 14px; color: white; }
+
+        .clinic-mark span {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        /* Polished Segmented Control */
+        .toggle-row {
+            display: flex;
+            flex-direction: row;
+            background: var(--bg-color);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .toggle-button {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background-color: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-button:hover:not(.active) {
+            color: var(--text-main);
+        }
+
+        .toggle-button.active {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-container {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Clean Inputs */
+        .input-field {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-hover);
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-light);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #patientFields,
+        #doctorFields {
+            padding-top: 18px;
+            margin-top: 6px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Standard SaaS Primary Button */
+        .submit-button {
+            background-color: var(--primary);
+            border: none;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .submit-button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .login-link-container {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .login-link {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .login-link b {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .login-link:hover b {
+            text-decoration: underline;
+            color: var(--primary-hover);
+        }
+
+        @media (max-width: 420px) {
+            .card { padding: 32px 24px; }
+            .title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <!-- Back button routing properly if needed, currently uses history.back() -->
+        <button onclick="window.history.back()" class="back-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18L9 12L15 6"/></svg>
+            Back
+        </button>
+
+        <div class="card">
+            <div class="header-container">
+                <div class="clinic-mark">
+                    <div class="mark">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12H7L9.5 5L14.5 19L17 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span>AI Triage</span>
+                </div>
+                <h1 class="title">Create an account</h1>
+                <p class="subtitle">Tell us who's signing up, and we'll route you right.</p>
+            </div>
+
+            <label class="label">I am a...</label>
+            <div class="toggle-row" id="roleToggle">
+                <button type="button" class="toggle-button active" data-role="patient">Patient</button>
+                <button type="button" class="toggle-button" data-role="doctor">Clinician</button>
+            </div>
+
+            <form id="signupForm">
+
+                <div class="input-container">
+                    <label class="label" for="fullName">Full Name</label>
+                    <input type="text" id="fullName" class="input-field" placeholder="John Doe" required>
+                </div>
+
+                <div class="input-container">
+                    <label class="label" for="email">Email Address</label>
+                    <input type="email" id="email" class="input-field" placeholder="name@example.com" required>
+                </div>
+
+                <div class="input-container">
+                    <label class="label" for="password">Password</label>
+                    <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+                </div>
+
+                <div id="patientFields">
+                    <div class="input-container">
+                        <label class="label" for="age">Age</label>
+                        <input type="number" id="age" class="input-field" placeholder="e.g., 34">
+                    </div>
+
+                    <div class="input-container">
+                        <label class="label" for="gender">Gender</label>
+                        <input type="text" id="gender" class="input-field" placeholder="e.g., Female">
+                    </div>
+
+                    <div class="input-container">
+                        <label class="label" for="problem">Primary Concern</label>
+                        <input type="text" id="problem" class="input-field" placeholder="e.g., Chest pain">
+                    </div>
+                </div>
+
+                <div id="doctorFields" class="hidden">
+                    <div class="input-container">
+                        <label class="label" for="specialty">Medical Specialty</label>
+                        <input type="text" id="specialty" class="input-field" placeholder="e.g., Pulmonology">
+                    </div>
+
+                    <div class="input-container">
+                        <label class="label" for="experience">Years of Experience</label>
+                        <input type="number" id="experience" class="input-field" placeholder="e.g., 12">
+                    </div>
+                </div>
+
+                <button type="submit" id="signupBtn" class="submit-button">Create account</button>
+
+                <div class="login-link-container">
+                    <a href="/login" class="login-link">Already have an account? <b>Sign in</b></a>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+    <!-- JavaScript Logic (Untouched) -->
+    <script>
+        let signupRole = 'patient';
+
+        // Role Toggle Logic
+        const roleButtons = document.querySelectorAll('.toggle-button');
+        const doctorFields = document.getElementById('doctorFields');
+        const patientFields = document.getElementById('patientFields');
+
+        roleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                roleButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                signupRole = btn.getAttribute('data-role');
+
+                // Toggle visibility using the CSS .hidden class cleanly
+                if (signupRole === 'doctor') {
+                    doctorFields.classList.remove('hidden');
+                    patientFields.classList.add('hidden');
+                } else {
+                    doctorFields.classList.add('hidden');
+                    patientFields.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Form Submission Logic
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const signupBtn = document.getElementById('signupBtn');
+            signupBtn.disabled = true;
+            signupBtn.textContent = 'Creating account...';
+
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            let payload = {
+                full_name: fullName,
+                email: email,
+                password: password
+            };
+
+            let endpoint = '';
+
+            if (signupRole === 'doctor') {
+                endpoint = '/api/signup_doctor';
+                payload.specialty = document.getElementById('specialty').value || "General Practice";
+                payload.experience = parseInt(document.getElementById('experience').value) || 0;
+            } else {
+                endpoint = '/api/signup_patient';
+                payload.age = parseInt(document.getElementById('age').value) || null;
+                payload.gender = document.getElementById('gender').value || "Not specified";
+                payload.problem = document.getElementById('problem').value || "None";
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    alert('Account created successfully! Please log in.');
+                    window.location.href = '/login';
+                } else {
+                    alert(data.detail || 'Failed to create account. Email may already be in use.');
+                    signupBtn.disabled = false;
+                    signupBtn.textContent = 'Create account';
+                }
+            } catch (error) {
+                console.error('Signup Error:', error);
+                alert('Network error. Ensure your FastAPI backend is running.');
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Create account';
+            }
+        });
+    </script>
+</body>
+</html>

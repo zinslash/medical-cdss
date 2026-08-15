@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Radiology Triage & Longitudinal CDSS</title>
+
+    <style>
+        /* =========================================
+           GLOBAL STYLES & APP THEME
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #F3F4F6; /* Light gray background */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: #1F2937;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1100px;
+            background-color: #FFFFFF;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 40px;
+        }
+
+        /* =========================================
+           HEADER & BANNERS
+           ========================================= */
+        .header {
+            background-color: #1E60FF;
+            padding: 24px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #FFFFFF;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .header-user {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #FFFFFF;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
+        .back-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+        .warning-banner {
+            background-color: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 16px 30px;
+            color: #92400E;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* =========================================
+           GRID LAYOUTS & CARDS
+           ========================================= */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            height: 100%;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #F3F4F6;
+        }
+
+        /* =========================================
+           FORMS & INPUTS
+           ========================================= */
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            display: block;
+            margin-top: 16px;
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: #F9FAFB;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #1F2937;
+            border: 1px solid #E5E7EB;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus { border-color: #1E60FF; background-color: #FFFFFF; }
+
+        .form-input[readonly] {
+            background-color: #F3F4F6;
+            color: #6B7280;
+            cursor: not-allowed;
+        }
+
+        input[type="file"]::file-selector-button {
+            background-color: #E5E7EB;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: #374151;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 12px;
+            transition: background 0.2s;
+        }
+
+        select.form-input {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px top 50%;
+            background-size: 12px auto;
+        }
+
+        .primary-button {
+            width: 100%;
+            background-color: #1E60FF;
+            border: none;
+            border-radius: 28px;
+            padding: 14px;
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0px 4px 8px rgba(30, 96, 255, 0.25);
+            transition: all 0.2s;
+            margin-top: 24px;
+        }
+
+        .primary-button:hover { opacity: 0.9; transform: translateY(-2px); }
+        .primary-button:disabled { background-color: #9CA3AF; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* =========================================
+           RESULTS PANELS & UTILITIES
+           ========================================= */
+        .hidden { display: none !important; }
+
+        .results-section {
+            padding: 0 30px 30px 30px;
+        }
+
+        .section-divider {
+            border: none;
+            border-top: 1px solid #E5E7EB;
+            margin: 0 30px 30px 30px;
+        }
+
+        .text-highlight-blue { color: #1E60FF; font-weight: 700; }
+        .text-highlight-red { color: #EF4444; font-weight: 700; }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .img-card {
+            text-align: center;
+            background: #F9FAFB;
+            padding: 15px;
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+        }
+        .img-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Dynamic Care Plan Card */
+        .care-card {
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 2px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .care-header {
+            padding: 16px 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .care-body { padding: 24px; background-color: #FFFFFF; }
+
+        .header-safe { background-color: #10B981; } /* Modern Green */
+        .header-danger { background-color: #EF4444; } /* Modern Red */
+        .border-danger { border-color: #EF4444 !important; }
+
+        pre { white-space: pre-wrap; font-family: inherit; font-size: 14.5px; margin: 0; line-height: 1.6; color: #374151; }
+    </style>
+</head>
+<body>
+
+<main class="dashboard-container">
+
+    <!-- Header -->
+    <header class="header">
+        <div>
+            <h1 class="header-title">CDSS Dashboard</h1>
+            <div class="header-user" id="headerUserLabel"></div>
+        </div>
+        <a href="/" class="back-btn">&larr; Back to Home</a>
+    </header>
+
+    <!-- Notice Banner -->
+    <div class="warning-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        Notice: This is a research prototype. AI predictions are not a substitute for professional medical advice. Always consult a physician.
+    </div>
+
+    <!-- Data Entry Grid -->
+    <section class="grid-container">
+
+        <!-- Column 1: Image Pipeline -->
+        <div class="card">
+            <h3 class="card-title">1. Diagnostic Image Pipeline</h3>
+            <form id="uploadForm">
+                <label class="form-label" for="patientId">Patient Unique ID:</label>
+                <input type="text" id="patientId" class="form-input" placeholder="Log in to auto-fill" required readonly>
+
+                <label class="form-label" for="imageInput">Upload Scan (Chest X-Ray, Brain MRI, Bone):</label>
+                <input type="file" id="imageInput" class="form-input" style="padding: 8px;" accept="image/png, image/jpeg" required>
+
+                <button type="submit" id="analyzeBtn" class="primary-button">Run Pipeline Analysis</button>
+            </form>
+        </div>
+
+        <!-- Column 2: Symptom Log -->
+        <div class="card">
+            <h3 class="card-title">2. Patient Symptom Check-In</h3>
+            <form id="symptomForm">
+                <label class="form-label" for="symPatientId">Confirm Patient ID:</label>
+                <input type="text" id="symPatientId" class="form-input" placeholder="Log in to auto-fill" required readonly>
+
+                <label class="form-label" for="painLevel">Current Pain Severity Scale (1 - 10):</label>
+                <input type="number" id="painLevel" class="form-input" min="1" max="10" value="4" required>
+
+                <label class="form-label" for="primarySymptom">Primary Current Symptom:</label>
+                <input type="text" id="primarySymptom" class="form-input" placeholder="e.g., Headache, Chest Pain" required>
+
+                <label class="form-label" for="symptomProgression">Evolving Interval Status:</label>
+                <select id="symptomProgression" class="form-input">
+                    <option value="Improving">Improving / Resolving</option>
+                    <option value="Stable" selected>Stable / Unchanged</option>
+                    <option value="Worse">Worse / Escalating</option>
+                </select>
+
+                <button type="submit" id="submitStatusBtn" class="primary-button">Submit Status Log</button>
+            </form>
+        </div>
+
+    </section>
+
+    <!-- Results Area (Hidden until data is submitted) -->
+    <div id="resultsWrapper" class="hidden">
+        <hr class="section-divider">
+
+        <section class="grid-container" style="padding-top: 0;">
+
+            <!-- Objective Findings Panel -->
+            <div id="findingsPanel" class="card hidden">
+                <h3 class="card-title">Objective Findings</h3>
+                <p style="margin-bottom: 8px; font-size: 15px;"><strong>Identified Pipeline Route:</strong> <span id="organText" class="text-highlight-blue"></span></p>
+                <p style="margin-bottom: 8px; font-size: 15px;"><strong>Predicted Diagnosis:</strong> <span id="conditionText" class="text-highlight-red"></span></p>
+                <p style="margin-bottom: 20px; font-size: 15px;"><strong>AI Inference Confidence:</strong> <span id="confidenceText" style="font-weight:600;"></span>%</p>
+
+                <h4 style="font-size: 15px; color:#4B5563; margin-bottom: 8px; border-top: 1px solid #E5E7EB; padding-top: 16px;">Expert Impression</h4>
+                <p id="impressionText" style="font-size: 14px; color: #374151; line-height: 1.5; margin-bottom: 16px;"></p>
+
+                <h4 style="font-size: 15px; color:#4B5563; margin-bottom: 8px;">Triage Framework</h4>
+                <p id="triageText" style="font-size: 14px; color: #4B5563; font-style: italic; line-height: 1.5;"></p>
+            </div>
+
+            <!-- Visualizations Panel -->
+            <div id="resultsDashboard" class="card hidden">
+                <h3 class="card-title">XAI Visualization Panels</h3>
+                <p style="font-size: 13px; color: #6B7280; margin-bottom: 10px;">Features are segmented by the downstream expert network parameters.</p>
+
+                <div class="image-grid">
+                    <div class="img-card">
+                        <h5 style="color: #374151; margin-bottom: 8px;">Current Inference Pass</h5>
+                        <img id="heatmapImage" src="" alt="AI Heatmap">
+                    </div>
+                    <div class="img-card" id="deltaCard" style="display:none;">
+                        <h5 style="color: #374151; margin-bottom: 8px;">Longitudinal Temporal Delta</h5>
+                        <img id="deltaImage" src="" alt="Temporal Change Map">
+                        <p style="font-size: 11px; margin-top: 12px; color: #6B7280; font-weight: 500;">
+                            🔴 Red = Progression | 🔵 Blue = Healing
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Dynamic Care Plan -->
+        <section class="results-section">
+            <div id="carePlanCard" class="care-card hidden">
+                <div id="carePlanHeader" class="care-header header-safe">
+                    🩺 Personalized Care Plan & OTC Guidance
+                </div>
+                <div class="care-body">
+                    <p style="font-size: 14px; color: #6B7280; margin-bottom: 16px; margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #F3F4F6;">
+                        <strong>Correlated Clinical Context:</strong> <span id="advContext" style="color: #1F2937;"></span>
+                    </p>
+                    <pre id="carePlanText"></pre>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+</main>
+
+<!-- Vanilla JavaScript -->
+<script>
+    // =========================================
+    // Auto-fill Patient ID from logged-in session
+    // =========================================
+    // Uses the same 'loggedInPatient' object that login.html stores in
+    // localStorage after a successful login (see login.html submit handler).
+    (function initPatientSession() {
+        const stored = localStorage.getItem('loggedInPatient');
+        const headerLabel = document.getElementById('headerUserLabel');
+        const patientIdField = document.getElementById('patientId');
+        const symPatientIdField = document.getElementById('symPatientId');
+
+        if (!stored) {
+            // No one is logged in — send them to log in first.
+            headerLabel.innerText = 'Not logged in — redirecting to login...';
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            const patient = JSON.parse(stored);
+            // Use email as the unique, stable identifier (matches how the
+            // backend keys scans and looks up /api/patient_profile/{email}).
+            const identifier = patient.email;
+
+            patientIdField.value = identifier;
+            symPatientIdField.value = identifier;
+            headerLabel.innerText = 'Logged in as ' + (patient.full_name || identifier);
+        } catch (err) {
+            console.error('Could not parse stored patient session:', err);
+            window.location.href = '/login';
+        }
+    })();
+
+    // Handle Image Pipeline Upload
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const originalText = analyzeBtn.innerText;
+        analyzeBtn.innerText = "Analyzing Scan...";
+        analyzeBtn.disabled = true;
+
+        const fileInput = document.getElementById('imageInput');
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("patient_id", document.getElementById('patientId').value);
+
+        try {
+            const response = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if(data.status === "success") {
+                // Reveal the results wrapper and specific panels
+                document.getElementById('resultsWrapper').classList.remove('hidden');
+                document.getElementById('resultsDashboard').classList.remove('hidden');
+                document.getElementById('findingsPanel').classList.remove('hidden');
+
+                document.getElementById('organText').innerText = data.scan_type_detected;
+                document.getElementById('confidenceText').innerText = data.confidence;
+                document.getElementById('conditionText').innerText = data.diagnosis;
+                document.getElementById('impressionText').innerText = data.clinical_data.impression;
+                document.getElementById('triageText').innerText = data.clinical_data.triage;
+                document.getElementById('heatmapImage').src = "data:image/jpeg;base64," + data.heatmap;
+
+                // Patient ID in the symptom form is already filled from session,
+                // but keep it in sync in case it was ever blank.
+                document.getElementById('symPatientId').value = document.getElementById('patientId').value;
+
+                if(data.has_historical_timeline) {
+                    document.getElementById('deltaCard').style.display = 'block';
+                    document.getElementById('deltaImage').src = "data:image/jpeg;base64," + data.delta_heatmap;
+                } else {
+                    document.getElementById('deltaCard').style.display = 'none';
+                }
+            } else {
+                alert("Error: " + data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Analysis failed. Check console.");
+        } finally {
+            analyzeBtn.innerText = originalText;
+            analyzeBtn.disabled = false;
+        }
+    });
+
+    // Handle Symptom Triage Submission
+    document.getElementById('symptomForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitStatusBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "Synthesizing Care Plan...";
+        submitBtn.disabled = true;
+
+        const payload = {
+            patient_id: document.getElementById('symPatientId').value,
+            pain_level: parseInt(document.getElementById('painLevel').value),
+            primary_symptom: document.getElementById('primarySymptom').value,
+            symptom_progression: document.getElementById('symptomProgression').value
+        };
+
+        try {
+            const response = await fetch('/patient/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if(data.status === "success") {
+                const careCard = document.getElementById('carePlanCard');
+                const careHeader = document.getElementById('carePlanHeader');
+
+                // Make sure wrapper is visible
+                document.getElementById('resultsWrapper').classList.remove('hidden');
+
+                // Show the care plan card
+                careCard.classList.remove('hidden');
+                document.getElementById('advContext').innerText = data.correlated_scan_context;
+                document.getElementById('carePlanText').innerText = data.patient_suggestions;
+
+                // Dynamic Color Engine: Catch Emergency flags from triage.py
+                if (data.patient_suggestions.includes('⚠️') || data.patient_suggestions.includes('CRITICAL')) {
+                    careHeader.classList.remove('header-safe');
+                    careHeader.classList.add('header-danger');
+                    careCard.classList.add('border-danger');
+                } else {
+                    careHeader.classList.remove('header-danger');
+                    careHeader.classList.add('header-safe');
+                    careCard.classList.remove('border-danger');
+                }
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Failed to generate care plan.");
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

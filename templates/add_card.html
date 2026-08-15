@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Card - AI Triage</title>
+
+    <style>
+        /* =========================================
+           GLOBAL STYLES
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #FFFFFF;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 600px; /* Constrains width for desktop viewing */
+            margin: 0 auto;
+        }
+
+        /* =========================================
+           HEADER SECTION
+           ========================================= */
+        .header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: #225fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #225fff;
+            text-align: center;
+        }
+
+        /* =========================================
+           CARD PREVIEW SECTION
+           ========================================= */
+        .card-preview {
+            background-color: #225fff;
+            margin: 20px;
+            border-radius: 16px;
+            padding: 20px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            box-shadow: 0px 8px 16px rgba(34, 95, 255, 0.2);
+        }
+
+        .card-number-display {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .card-label {
+            color: white;
+            font-size: 12px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .card-bottom-row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .card-name-display, .card-expiry-display {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* =========================================
+           FORM SECTION
+           ========================================= */
+        .form {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #000;
+        }
+
+        .input-field {
+            background-color: #ecf1ff;
+            border-radius: 20px;
+            padding: 0 20px;
+            height: 50px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #225fff;
+            border: 1px solid transparent;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #225fff;
+        }
+
+        .input-field::placeholder {
+            color: #a3b9ff;
+        }
+
+        /* Two-column layout for Expiry and CVV */
+        .row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .half-input-container {
+            width: 48%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =========================================
+           SUBMIT BUTTON
+           ========================================= */
+        .submit-button {
+            background-color: #225fff;
+            border-radius: 30px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            box-shadow: 0px 4px 8px rgba(34, 95, 255, 0.3);
+        }
+
+        .submit-button:hover {
+            opacity: 0.9;
+        }
+
+        .button-text {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+
+        <!-- Header -->
+        <header class="header">
+            <button onclick="window.history.back()" class="back-button">&lt; Back</button>
+            <h1 class="header-title">Add Card</h1>
+        </header>
+
+        <!-- Live Card Preview -->
+        <section class="card-preview">
+            <div id="previewNumber" class="card-number-display">456 667 689 777</div>
+            <div class="card-label">Card Holder Name</div>
+            <div class="card-bottom-row">
+                <div id="previewName" class="card-name-display">Zinnatun</div>
+                <div id="previewExpiry" class="card-expiry-display">04/28</div>
+            </div>
+        </section>
+
+        <!-- Input Form -->
+        <section class="form">
+            <label class="label" for="cardholderName">Card Holder Name</label>
+            <input type="text" id="cardholderName" class="input-field" placeholder="Zinnatun">
+
+            <label class="label" for="cardNumber">Card Number</label>
+            <input type="tel" id="cardNumber" class="input-field" placeholder="456 667 689 777">
+
+            <div class="row">
+                <div class="half-input-container">
+                    <label class="label" for="expiryDate">Expiry Date</label>
+                    <input type="tel" id="expiryDate" class="input-field" placeholder="04/28">
+                </div>
+                <div class="half-input-container">
+                    <label class="label" for="cvv">CVV</label>
+                    <input type="password" id="cvv" class="input-field" placeholder="123" maxlength="4">
+                </div>
+            </div>
+
+            <button type="button" id="saveBtn" class="submit-button">
+                <span class="button-text">Save Card</span>
+            </button>
+        </section>
+
+    </main>
+
+    <!-- Vanilla JavaScript for Formatting and Live Preview -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. DOM Elements
+            const nameInput = document.getElementById('cardholderName');
+            const numberInput = document.getElementById('cardNumber');
+            const expiryInput = document.getElementById('expiryDate');
+            const cvvInput = document.getElementById('cvv');
+            const saveBtn = document.getElementById('saveBtn');
+
+            const previewName = document.getElementById('previewName');
+            const previewNumber = document.getElementById('previewNumber');
+            const previewExpiry = document.getElementById('previewExpiry');
+
+            // 2. Initial State (Matching your React defaults)
+            let state = {
+                cardholderName: "Zinnatun",
+                cardNumber: "456 667 689 777",
+                expiryDate: "04/28",
+                cvv: "677"
+            };
+
+            // Initialize Inputs
+            nameInput.value = state.cardholderName;
+            numberInput.value = state.cardNumber;
+            expiryInput.value = state.expiryDate;
+            cvvInput.value = state.cvv;
+
+            // 3. Update Visual Preview
+            const updatePreview = () => {
+                previewName.textContent = state.cardholderName || "Zinnatun";
+                previewNumber.textContent = state.cardNumber || "456 667 689 777";
+                previewExpiry.textContent = state.expiryDate || "04/28";
+            };
+
+            // 4. Input Formatters & Listeners
+            nameInput.addEventListener('input', (e) => {
+                state.cardholderName = e.target.value;
+                updatePreview();
+            });
+
+            numberInput.addEventListener('input', (e) => {
+                // Strip non-digits and slice to 12 (matching your TSX logic)
+                let val = e.target.value.replace(/\D/g, "").slice(0, 12);
+                // Group by 3 digits
+                val = val.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+
+                e.target.value = val;
+                state.cardNumber = val;
+                updatePreview();
+            });
+
+            expiryInput.addEventListener('input', (e) => {
+                // Strip non-digits and slice to 4
+                let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                // Add the slash after 2 digits
+                if (val.length > 2) {
+                    val = val.slice(0, 2) + '/' + val.slice(2);
+                }
+
+                e.target.value = val;
+                state.expiryDate = val;
+                updatePreview();
+            });
+
+            cvvInput.addEventListener('input', (e) => {
+                // Strip non-digits and slice to 4
+                let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                e.target.value = val;
+                state.cvv = val;
+            });
+
+            // 5. Submit Handler
+            saveBtn.addEventListener('click', () => {
+                if (!state.cardholderName.trim() || !state.cardNumber.trim() || !state.expiryDate.trim() || !state.cvv.trim()) {
+                    alert("Please complete all card details.");
+                    return;
+                }
+                alert("Card saved successfully.");
+                // Add window.location.href = 'somepage.html' here if you want it to navigate after saving!
+            });
+        });
+    </script>
+</body>
+</html>

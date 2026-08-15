@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find a Doctor - AI Triage</title>
+
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           GLOBAL VARIABLES & PALETTE
+           ========================================= */
+        :root {
+            --bg-color: #F4F7FB;
+            --app-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+
+            --primary: #0284C7;
+            --primary-hover: #0369A1;
+            --primary-light: #E0F2FE;
+            --primary-soft: #F0F9FF;
+
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --field-bg: #F8FAFC;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.04), 0 4px 8px -4px rgb(0 0 0 / 0.03);
+
+            --radius-lg: 20px;
+            --radius-md: 16px;
+            --radius-sm: 10px;
+        }
+
+        /* =========================================
+           GLOBAL STYLES (FULL PAGE NATURAL FLOW)
+           ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+
+            /* AMBIENT MESH BACKGROUND */
+            background-image:
+                radial-gradient(at 0% 0%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #E0F2FE 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #F0F9FF 0px, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(2, 132, 199, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
+            background-size: 100% 100%;
+        }
+
+        /* Subtle grid overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(2, 132, 199, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(2, 132, 199, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Hide scrollbars but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* =========================================
+           PAGE WRAPPER
+           ========================================= */
+        .page-wrapper {
+            width: 100%;
+            max-width: 1200px; /* Wide, clean desktop fit */
+            margin: 0 auto;
+            padding: 40px 32px 80px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* =========================================
+           HEADER
+           ========================================= */
+        .header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .back-button {
+            background: var(--app-bg);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .back-button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-title {
+            color: var(--text-main);
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: -0.01em;
+            justify-self: center;
+        }
+
+        .header-spacer { width: 95px; } /* Balances the grid for dead-center title */
+
+        /* =========================================
+           SEARCH & FILTERS
+           ========================================= */
+        .controls-container {
+            background: var(--app-bg);
+            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: var(--radius-lg);
+            padding: 24px 32px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+        }
+
+        .search-box {
+            width: 100%;
+            background-color: var(--field-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px 16px 16px 48px;
+            font-size: 16px;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
+            background-color: var(--app-bg);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        .search-box::placeholder {
+            color: var(--text-light);
+            font-weight: 400;
+        }
+
+        /* Chips generated by JS */
+        .chip-row {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap; /* Wraps cleanly on desktop */
+            gap: 10px;
+        }
+
+        .chip {
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            background-color: var(--app-bg);
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chip:hover:not(.active) {
+            border-color: var(--primary-light);
+            color: var(--primary);
+            background-color: var(--primary-soft);
+            transform: translateY(-1px);
+        }
+
+        .chip.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
+
+        /* =========================================
+           DOCTOR GRID & CARDS (Generated by JS)
+           ========================================= */
+
+        /* The JS creates <section class="spec-section"> to group doctors by specialty.
+           We use CSS Grid to display the cards side-by-side inside this section. */
+        .spec-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        /* The title needs to span all columns so it sits above the grid of cards */
+        .spec-title {
+            grid-column: 1 / -1;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .spec-title::after {
+            content: "";
+            flex-grow: 1;
+            height: 1px;
+            background-color: var(--border);
+        }
+
+        .doctor-card {
+            background-color: var(--app-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .doctor-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .doctor-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, #0ea5e9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+        }
+
+        .doctor-info {
+            flex: 1;
+            min-width: 0; /* Prevents text overflow */
+        }
+
+        .doctor-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doctor-specialty {
+            font-size: 14px;
+            color: var(--primary);
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .doctor-stats {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .doctor-fee {
+            font-weight: 700;
+            color: var(--text-main);
+            background: var(--field-bg);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .book-btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 30px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+            flex-shrink: 0;
+        }
+
+        .book-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(2, 132, 199, 0.3);
+        }
+
+        /* =========================================
+           STATES (Empty / Error)
+           ========================================= */
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 16px;
+            font-weight: 500;
+            padding: 60px 20px;
+            background: var(--app-bg);
+            border-radius: var(--radius-lg);
+            border: 1px dashed var(--border-hover);
+        }
+
+        .error-state {
+            margin: 0 auto;
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        /* =========================================
+           RESPONSIVE
+           ========================================= */
+        @media (max-width: 600px) {
+            .page-wrapper { padding: 24px 16px; }
+            .controls-container { padding: 20px; }
+            .header-title { font-size: 20px; }
+            .back-button span { display: none; }
+            .header-spacer { width: 45px; }
+            .spec-section { grid-template-columns: 1fr; }
+            .doctor-card { flex-direction: column; text-align: center; }
+            .doctor-stats { justify-content: center; }
+            .book-btn { width: 100%; margin-top: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="page-wrapper">
+        <header class="header">
+            <button class="back-button" onclick="window.history.back()">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Find a Specialist</h1>
+            <div class="header-spacer"></div>
+        </header>
+
+        <div class="controls-container">
+            <div class="search-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="searchBox" class="search-box" placeholder="Search by doctor name or clinical specialty...">
+            </div>
+
+            <div id="chipRow" class="chip-row">
+                <!-- Specialization chips injected via JS -->
+            </div>
+        </div>
+
+        <div id="doctorListWrapper">
+            <div class="empty-state">Loading clinical directory…</div>
+        </div>
+    </main>
+
+    <!-- Vanilla JavaScript for Rendering and Logic (UNTOUCHED) -->
+    <script>
+        // =========================================
+        // The doctor directory comes from the server (doctors_catalog table),
+        // so the consultation fee has one authoritative source. The fee is
+        // shown here for information only -- it is never sent back when
+        // booking, because the server looks it up again.
+        // =========================================
+        let doctors = [];
+        let specializations = [];
+        let activeSpecialty = "All";
+        let searchTerm = "";
+
+        async function loadDoctors() {
+            const wrapper = document.getElementById('doctorListWrapper');
+            try {
+                const res = await fetch('/api/doctors_catalog');
+                if (!res.ok) throw new Error('bad response');
+                const data = await res.json();
+
+                doctors = data.doctors || [];
+                specializations = data.specializations || [];
+
+                if (doctors.length === 0) {
+                    wrapper.innerHTML = '<div class="empty-state">No doctors are listed yet.</div>';
+                    return;
+                }
+
+                renderChips();
+                renderDoctors();
+            } catch (e) {
+                wrapper.innerHTML = '<div class="error-state">Could not load the doctor list. '
+                                  + 'Make sure the server is running, then refresh.</div>';
+            }
+        }
+
+        // Render specialization filter chips
+        function renderChips() {
+            const chipRow = document.getElementById('chipRow');
+            const present = specializations.filter(s => doctors.some(d => d.specialty === s));
+            const allSpecs = ["All", ...present];
+            chipRow.innerHTML = '';
+
+            allSpecs.forEach(spec => {
+                const chip = document.createElement('button');
+                chip.className = 'chip' + (activeSpecialty === spec ? ' active' : '');
+                chip.textContent = spec;
+                chip.addEventListener('click', () => {
+                    activeSpecialty = spec;
+                    renderChips();
+                    renderDoctors();
+                });
+                chipRow.appendChild(chip);
+            });
+        }
+
+        // Render doctor list, grouped by specialization
+        function renderDoctors() {
+            const wrapper = document.getElementById('doctorListWrapper');
+            wrapper.innerHTML = '';
+
+            const filtered = doctors.filter(doc => {
+                const matchesSpecialty = activeSpecialty === "All" || doc.specialty === activeSpecialty;
+                const matchesSearch = searchTerm === "" ||
+                    doc.full_name.toLowerCase().includes(searchTerm) ||
+                    doc.specialty.toLowerCase().includes(searchTerm);
+                return matchesSpecialty && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                wrapper.innerHTML = '<div class="empty-state">No doctors found. Try a different search or specialization.</div>';
+                return;
+            }
+
+            const grouped = {};
+            filtered.forEach(doc => {
+                if (!grouped[doc.specialty]) grouped[doc.specialty] = [];
+                grouped[doc.specialty].push(doc);
+            });
+
+            Object.keys(grouped).forEach(specialty => {
+                const section = document.createElement('section');
+                section.className = 'spec-section';
+
+                const title = document.createElement('h2');
+                title.className = 'spec-title';
+                title.textContent = specialty;
+                section.appendChild(title);
+
+                grouped[specialty].forEach(doc => {
+                    const card = document.createElement('div');
+                    card.className = 'doctor-card';
+                    card.innerHTML = `
+                        <div class="doctor-avatar">${doc.initials || '--'}</div>
+                        <div class="doctor-info">
+                            <div class="doctor-name">${doc.full_name}</div>
+                            <div class="doctor-specialty">${doc.specialty}</div>
+                            <div class="doctor-stats">
+                                <span>⭐ ${doc.rating ?? '-'}</span>
+                                <span>💬 ${doc.reviews ?? 0} reviews</span>
+                                <span class="doctor-fee">TK ${Number(doc.fee).toFixed(0)}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    const bookBtn = document.createElement('button');
+                    bookBtn.className = 'book-btn';
+                    bookBtn.textContent = 'Book';
+                    bookBtn.addEventListener('click', () => {
+                        // Only the key travels. The fee is deliberately NOT in the
+                        // URL -- it would be editable in the address bar.
+                        const params = new URLSearchParams({ doctorKey: doc.doctor_key });
+                        window.location.href = `/schedule?${params.toString()}`;
+                    });
+
+                    card.appendChild(bookBtn);
+                    section.appendChild(card);
+                });
+
+                wrapper.appendChild(section);
+            });
+        }
+
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            searchTerm = e.target.value.trim().toLowerCase();
+            renderDoctors();
+        });
+
+        loadDoctors();
+    </script>
+</body>
+</html>
+
