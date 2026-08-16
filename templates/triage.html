@@ -1153,7 +1153,7 @@
                 // Links straight into the existing booking flow
                 const a = document.createElement('a');
                 a.className = 'doc-row' + (isGeneral ? ' is-general' : '');
-                a.href = '/schedule?doctor=' + encodeURIComponent(doc.doctor_key);
+                a.href = '/schedule?doctorKey=' + encodeURIComponent(doc.doctor_key);
 
                 const avatar = document.createElement('div');
                 avatar.className = 'doc-avatar';
